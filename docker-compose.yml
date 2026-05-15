@@ -1,30 +1,46 @@
-version: '3.9'
 services:
-  mongo-server:
-    image: mongo:latest
-    container_name: mongo-server
-    restart: always
+
+  backend:
+    build: ./backend
     ports:
-      - "27017:27017" 
+      - "3000:3000"
     volumes:
-      - mongodb_data:/data/db
-    networks:
-      - mongodb_network
-  mongo-client:
-    image: mongo-express:latest
-    container_name: mongo-client
-    restart: always
+      - ./backend:/app
+      - /app/node_modules
     depends_on:
-      - mongo-server
-    environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo-server
-      - ME_CONFIG_MONGODB_PORT=27017
+      - mongo
+      - db
+
+  frontend:
+    build: ./frontend
     ports:
-      - "8081:8081"
-    networks:
-      - mongodb_network
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev -- --host
+
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+
 volumes:
-  mongodb_data:
-networks:
-  mongodb_network:
-# comando para levantar: docker-compose up -d
+  mongo_data:
+
+# docker compose up --build
+# docker compose down -v   (para bajar volumen tambien)
