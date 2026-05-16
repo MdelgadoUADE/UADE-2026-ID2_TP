@@ -1,4 +1,32 @@
-const express = require("express");
+const express = require('express');
+
+const cors = require('cors');
+
+const connectMongo = require('./config/mongo');
+
+const reportsRoutes = require('./routes/reports');
+
+const app = express();
+
+app.use(cors());
+
+app.use(express.json());
+
+app.use('/reports', reportsRoutes);
+
+const PORT = 3000;
+
+async function startServer() {
+  await connectMongo();
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+startServer();
+
+/*const express = require("express");
 const mongoose = require("mongoose");
 
 const app = express();
@@ -13,4 +41,4 @@ app.get("/", (req, res) => {
 
 app.listen(3000, () => {
   console.log("Servidor en puerto 3000");
-});
+});*/
