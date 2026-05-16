@@ -1,5 +1,13 @@
 <script setup>
-async function testMongoConnection() {
+import { ref } from 'vue';
+
+const reportResult = ref('');
+
+const reportIds = ref([]);
+
+const reportId = ref('');
+
+async function createReport() {
 
   const report = {
     user: {
@@ -43,23 +51,108 @@ async function testMongoConnection() {
 
     const data = await response.json();
 
-    console.log(data);
-
-    alert('Reporte insertado correctamente');
+    alert(`Reporte insertado con ID: ${data._id}`);
 
   } catch (error) {
 
     console.error(error);
 
-    alert('Error conectando con backend');
+    alert('Error insertando reporte');
+  }
+}
+
+async function getReport() {
+
+  if (!reportId.value) {
+
+    alert('Ingresá un ID');
+
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      `http://localhost:3000/reports/${reportId.value}`
+    );
+
+    const data = await response.json();
+
+    reportResult.value = JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert('Error obteniendo reporte');
+  }
+}
+
+async function getAllReportIds() {
+
+  try {
+
+    const response = await fetch(
+      'http://localhost:3000/reports'
+    );
+
+    const data = await response.json();
+
+    reportIds.value = data.map(report => report._id);
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert('Error obteniendo IDs');
   }
 }
 </script>
 
 <template>
-  <div>
-    <button @click="testMongoConnection">
-      Test Mongo Connection
+  <div style="padding: 20px;">
+
+    <button @click="createReport">
+      Crear Reporte
     </button>
+
+    <hr />
+
+    <button @click="getAllReportIds">
+      Obtener Todos los IDs
+    </button>
+
+    <ul>
+      <li
+        v-for="id in reportIds"
+        :key="id"
+      >
+        {{ id }}
+      </li>
+    </ul>
+
+    <hr />
+
+    <input
+      v-model="reportId"
+      type="text"
+      placeholder="Ingresar Report ID"
+      style="width: 300px; padding: 8px;"
+    />
+
+    <button @click="getReport">
+      Obtener Reporte
+    </button>
+
+    <hr />
+
+    <textarea
+      v-model="reportResult"
+      rows="20"
+      cols="80"
+      readonly
+      style="font-family: monospace;"
+    ></textarea>
+
   </div>
 </template>
