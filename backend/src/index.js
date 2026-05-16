@@ -1,18 +1,15 @@
-const express = require('express');
+const express = require("express");
+const cors = require("cors");
+const connectMongo = require("./config/mongo");
 
-const cors = require('cors');
-
-const connectMongo = require('./config/mongo');
-
-const reportsRoutes = require('./routes/reports');
-
+const reportsRoutes = require("./routes/reports");
+const mapFunctions = require("./utils/mapFunctions");
 const app = express();
 
 app.use(cors());
-
 app.use(express.json());
-
-app.use('/reports', reportsRoutes);
+app.use("/reports", reportsRoutes);
+app.use("/map", mapFunctions);
 
 const PORT = 3000;
 

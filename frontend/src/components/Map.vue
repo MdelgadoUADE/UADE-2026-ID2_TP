@@ -3,12 +3,15 @@ import { onMounted } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+let map;
+
+//funcion manejadora del mapa
 onMounted(() => {
-  const map = L.map("map", {
+  // Default center
+  map = L.map("map", {
     minZoom: 14,
     maxZoom: 17,
   }).setView([-34.6037, -58.3816], 15);
-  // Default center
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors",
@@ -48,7 +51,63 @@ onMounted(() => {
   } else {
     console.log("Geolocation not supported");
   }
+
+  //limitador de consultas Nominatim permite 1 request por segundo
+  let lastClick = 0;
+
+  map.on("click", async (e) => {
+    // se chequea que no exceda el limite de request
+    const now = Date.now();
+
+    if (now - lastClick < 1000) return;
+
+    lastClick = now;
+    //
+
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    console.log("Click en mapa:", lat, lng);
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/map/reverse-geocode?lat=${lat}&lng=${lng}`,
+      );
+
+      const data = await response.json();
+
+      showPopup(lat, lng, data.street);
+    } catch (error) {
+      showPopup(lat, lng, "No se pudo obtener la calle");
+      console.error(error);
+    }
+  });
 });
+function showPopup(lat, lng, street) {
+  L.popup()
+    .setLatLng([lat, lng])
+    .setContent(
+      `
+      <div>
+        <strong>${street}</strong>
+        <br><br>
+        <button id="crear-reporte-btn">
+          Crear reporte
+        </button>
+      </div>
+    `,
+    )
+    .openOn(map);
+
+  setTimeout(() => {
+    const btn = document.getElementById("crear-reporte-btn");
+
+    if (btn) {
+      btn.addEventListener("click", () => {
+        console.log("click en crear reporte");
+      });
+    }
+  }, 0);
+}
 </script>
 
 <template>
