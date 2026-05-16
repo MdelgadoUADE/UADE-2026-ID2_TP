@@ -7,12 +7,39 @@ const reportIds = ref([]);
 
 const reportId = ref('');
 
+const nearbyReports = ref([]);
+
+async function getNearbyReports() {
+
+  if (!reportId.value) {
+    alert('Ingresá un ID');
+    return;
+  }
+
+  try {
+
+    const response = await fetch(
+      `http://localhost:3000/reports/near/${reportId.value}`
+    );
+
+    const data = await response.json();
+
+    nearbyReports.value = data;
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert('Error obteniendo reportes cercanos');
+  }
+}
+
 async function createReport() {
 
   const report = {
     user: {
-      user_id: '123',
-      username: 'vue.test'
+      user_id: '1234',
+      username: 'vue.test2'
     },
 
     notes: 'Test desde Vue',
@@ -25,7 +52,7 @@ async function createReport() {
 
     report_location: {
       type: 'Point',
-      coordinates: [-58.37, -34.60]
+      coordinates: [-30.37, -20.60]
     },
 
     status: 'active',
@@ -153,6 +180,41 @@ async function getAllReportIds() {
       readonly
       style="font-family: monospace;"
     ></textarea>
+
+  </div>
+   <div style="padding: 20px;">
+
+    <input
+      v-model="reportId"
+      placeholder="Ingresar Report ID"
+      style="width: 300px; padding: 8px;"
+    />
+
+    <button @click="getNearbyReports">
+      Obtener reportes cercanos (50km)
+    </button>
+
+    <hr />
+
+    <table border="1" cellpadding="8">
+
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Coordenadas</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr v-for="r in nearbyReports" :key="r.id">
+          <td>{{ r.id }}</td>
+          <td>{{ r.username }}</td>
+          <td>{{ r.coordinates }}</td>
+        </tr>
+      </tbody>
+
+    </table>
 
   </div>
 </template>
