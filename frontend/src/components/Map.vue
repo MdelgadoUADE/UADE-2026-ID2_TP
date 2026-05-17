@@ -1,9 +1,17 @@
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
+
+//importacion de modal de reporte
+import CreateReport from "./CreateReport.vue";
+
+//importacion de mapa utilizado para la herramienta
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 let map;
+
+const showReportModal = ref(false);
+const selectedStreet = ref("");
 
 //funcion manejadora del mapa
 onMounted(() => {
@@ -103,7 +111,8 @@ function showPopup(lat, lng, street) {
 
     if (btn) {
       btn.addEventListener("click", () => {
-        console.log("click en crear reporte");
+        showReportModal.value = true;
+        selectedStreet.value = street;
       });
     }
   }, 0);
@@ -112,6 +121,12 @@ function showPopup(lat, lng, street) {
 
 <template>
   <div id="map"></div>
+
+  <CreateReport
+    :visible="showReportModal"
+    :street="selectedStreet"
+    @close="showReportModal = false"
+  />
 </template>
 
 <style scoped>
