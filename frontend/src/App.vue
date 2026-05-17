@@ -182,4 +182,5 @@ async function getAllReportIds() {
       </tbody>
     </table>
   </div>
+  <MapView />
 </template>
