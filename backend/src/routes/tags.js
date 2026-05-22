@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const ReportType = require("../models/ReportType");
+const ReportType = require("../models/Tags");
 
 router.get("/", async (req, res) => {
   try {

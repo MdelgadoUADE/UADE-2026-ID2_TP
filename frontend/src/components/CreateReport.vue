@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 defineProps({
   visible: Boolean,
@@ -8,20 +8,27 @@ defineProps({
 
 const emit = defineEmits(["close"]);
 
-const reportTypes = ref([]);
-const selectedType = ref("");
+const tags = ref([]);
+const selectedTags = ref("");
+
+const useCustomTag = ref(false);
+
+const customTag = ref("");
+const customDescription = ref("");
+
+const isSelectDisabled = computed(() => useCustomTag.value);
 
 onMounted(async () => {
   try {
-    const response = await fetch("http://localhost:3000/report-types");
+    const response = await fetch("http://localhost:3000/tags");
 
     const data = await response.json();
 
     if (data.success) {
-      reportTypes.value = data.reportTypes;
+      tags.value = data.tags;
     }
   } catch (error) {
-    console.error("Failed to load report types:", error);
+    console.error("Failed to load tags:", error);
   }
 });
 </script>
@@ -40,27 +47,31 @@ onMounted(async () => {
       <form>
         <!-- Tipo de reporte a crear -->
         <div class="field">
-          <label>Tipo de reporte</label>
-
-          <select v-model="selectedType" required>
-            <option disabled value="">Seleccione una opción</option>
-
+          <label>Tag</label>
+          <select v-model="selectedTags" :disabled="isSelectDisabled" required>
+            <option disabled value="">Seleccione un tag</option>
             <option
-              v-for="type in reportTypes"
-              :key="type._id"
-              :value="type.slug"
+              v-for="tag in tags"
+              :key="tag._id"
+              :value="tag.canonical_name"
             >
-              {{ type.name }}
+              {{ tag.canonical_name }}
             </option>
           </select>
         </div>
+        <!-- custom tag checkbox --->
+        <div class="checkbox-field">
+          <input id="customTag" type="checkbox" v-model="useCustomTag" />
+
+          <label for="customTag">Custom Tag</label>
+        </div>
 
         <div class="field">
-          <label>Descripción</label>
+          <label>Custom Descripción</label>
           <textarea
+            v-model="customDescription"
             rows="4"
             placeholder="Describe el problema..."
-            required
           ></textarea>
         </div>
 
@@ -133,5 +144,29 @@ textarea {
   width: 100%;
   padding: 12px;
   cursor: pointer;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+select:disabled {
+  background-color: #f0f0f0;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.checkbox-field label {
+  margin: 0;
+  font-weight: normal;
 }
 </style>

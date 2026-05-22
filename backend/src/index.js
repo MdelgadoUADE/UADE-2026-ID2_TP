@@ -3,7 +3,7 @@ const cors = require("cors");
 const connectMongo = require("./config/mongo");
 
 const reportsRoutes = require("./routes/reports");
-const reportTypeRoutes = require("./routes/reportTypes");
+const reportTags = require("./routes/tags");
 const mapFunctions = require("./utils/mapFunctions");
 const app = express();
 
@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/reports", reportsRoutes);
 app.use("/map", mapFunctions);
-app.use("/report-types", reportTypeRoutes);
+app.use("/tags", reportTags);
 
 const PORT = 3000;
 
