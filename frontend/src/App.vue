@@ -1,6 +1,15 @@
 <script setup>
 import { ref } from "vue";
 import MapView from "./components/Map.vue";
+import LoginForm from './components/LoginForm.vue'
+import AppHeader from './components/AppHeader.vue'
+
+const username = ref('juan.perez')
+
+function logout() {
+
+  isLogged.value = false
+}
 
 const reportResult = ref("");
 
@@ -9,6 +18,13 @@ const reportIds = ref([]);
 const reportId = ref("");
 
 const nearbyReports = ref([]);
+
+const isLogged = ref(false)
+
+function onLoginSuccess() {
+
+  isLogged.value = true
+}
 
 async function getNearbyReports() {
   if (!reportId.value) {
@@ -119,68 +135,80 @@ async function getAllReportIds() {
 </script>
 
 <template>
-  <div style="padding: 20px">
-    <button @click="createReport">Crear Reporte</button>
+  <LoginForm 
+    v-if="!isLogged"
+    @login-success="onLoginSuccess"
+  />
 
-    <hr />
-
-    <button @click="getAllReportIds">Obtener Todos los IDs</button>
-
-    <ul>
-      <li v-for="id in reportIds" :key="id">
-        {{ id }}
-      </li>
-    </ul>
-
-    <hr />
-
-    <input
-      v-model="reportId"
-      type="text"
-      placeholder="Ingresar Report ID"
-      style="width: 300px; padding: 8px"
+  <div v-else>
+    <AppHeader
+      :username="username"
+      @logout="logout"
     />
 
-    <button @click="getReport">Obtener Reporte</button>
+    <div style="padding: 20px">
+      <button @click="createReport">Crear Reporte</button>
 
-    <hr />
+      <hr />
 
-    <textarea
-      v-model="reportResult"
-      rows="20"
-      cols="80"
-      readonly
-      style="font-family: monospace"
-    ></textarea>
+      <button @click="getAllReportIds">Obtener Todos los IDs</button>
+
+      <ul>
+        <li v-for="id in reportIds" :key="id">
+          {{ id }}
+        </li>
+      </ul>
+
+      <hr />
+
+      <input
+        v-model="reportId"
+        type="text"
+        placeholder="Ingresar Report ID"
+        style="width: 300px; padding: 8px"
+      />
+
+      <button @click="getReport">Obtener Reporte</button>
+
+      <hr />
+
+      <textarea
+        v-model="reportResult"
+        rows="20"
+        cols="80"
+        readonly
+        style="font-family: monospace"
+      ></textarea>
+    </div>
+    <div style="padding: 20px">
+      <input
+        v-model="reportId"
+        placeholder="Ingresar Report ID"
+        style="width: 300px; padding: 8px"
+      />
+
+      <button @click="getNearbyReports">Obtener reportes cercanos (50km)</button>
+
+      <hr />
+
+      <table border="1" cellpadding="8">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Coordenadas</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr v-for="r in nearbyReports" :key="r.id">
+            <td>{{ r.id }}</td>
+            <td>{{ r.username }}</td>
+            <td>{{ r.coordinates }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <MapView />
   </div>
-  <div style="padding: 20px">
-    <input
-      v-model="reportId"
-      placeholder="Ingresar Report ID"
-      style="width: 300px; padding: 8px"
-    />
-
-    <button @click="getNearbyReports">Obtener reportes cercanos (50km)</button>
-
-    <hr />
-
-    <table border="1" cellpadding="8">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Username</th>
-          <th>Coordenadas</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr v-for="r in nearbyReports" :key="r.id">
-          <td>{{ r.id }}</td>
-          <td>{{ r.username }}</td>
-          <td>{{ r.coordinates }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <MapView />
 </template>
