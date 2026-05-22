@@ -158,6 +158,155 @@ reportitDb.reports.insertMany([
   }
 ]);
 
+/* =========================
+   TAGS
+========================= */
+reportitDb.createCollection('tags');
+
+reportitDb.tags.insertMany([
+
+  /* =========================
+     VEHICULO
+  ========================= */
+
+  {
+    canonical_name: "color_vehiculo",
+
+    aliases: [
+      "color-vehiculo",
+      "Color-Vehiculo",
+      "vehicle-color",
+      "auto-color",
+      "color auto",
+      "vehiculo color",
+      "vehicle_color",
+      "car-color"
+    ],
+
+    type: "vehiculo"
+  },
+
+  {
+    canonical_name: "modelo_vehiculo",
+
+    aliases: [
+      "modelo-vehiculo",
+      "vehicle-model",
+      "modelo auto",
+      "modelo_auto",
+      "car-model",
+      "vehicle_model"
+    ],
+
+    type: "vehiculo"
+  },
+
+  {
+    canonical_name: "patente_vehiculo",
+
+    aliases: [
+      "patente-auto",
+      "patente vehiculo",
+      "vehicle-plate",
+      "license-plate",
+      "matricula",
+      "patente_auto"
+    ],
+
+    type: "vehiculo"
+  },
+
+  /* =========================
+     ACTOR / PERSONA
+  ========================= */
+
+  {
+    canonical_name: "pelo_color_actor",
+
+    aliases: [
+      "actor-hair-color",
+      "hair-color",
+      "color pelo",
+      "hair_color_actor",
+      "cabello-color",
+      "pelo actor"
+    ],
+
+    type: "persona"
+  },
+
+  {
+    canonical_name: "piel_color_actor",
+
+    aliases: [
+      "actor-skin-color",
+      "skin-color",
+      "tono piel",
+      "color piel",
+      "skin_color_actor"
+    ],
+
+    type: "persona"
+  },
+
+  {
+    canonical_name: "edad_actor",
+
+    aliases: [
+      "actor-age",
+      "age",
+      "edad persona",
+      "persona edad",
+      "actor_age"
+    ],
+
+    type: "persona"
+  },
+
+  {
+    canonical_name: "altura_actor",
+
+    aliases: [
+      "actor-height",
+      "height",
+      "altura persona",
+      "persona altura",
+      "actor_height"
+    ],
+
+    type: "persona"
+  },
+
+  {
+    canonical_name: "genero_actor",
+
+    aliases: [
+      "actor-gender",
+      "gender",
+      "sexo",
+      "sexo actor",
+      "actor_gender"
+    ],
+
+    type: "persona"
+  }
+
+]);
+
+/* =========================
+   INDEXES
+========================= */
+
 reportitDb.reports.createIndex({
   report_location: "2dsphere"
+});
+
+reportitDb.tags.createIndex({
+  canonical_name: 1
+}, {
+  unique: true
+});
+
+reportitDb.tags.createIndex({
+  aliases: 1
 });
