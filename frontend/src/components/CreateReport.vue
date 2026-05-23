@@ -34,22 +34,62 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="visible" class="overlay">
-    <div class="modal">
-      <button class="close-btn" @click="emit('close')">✕</button>
+  <div
+    v-if="visible"
+    class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center md:p-4"
+  >
+    <!-- Modal -->
+    <div
+      class="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-2xl md:shadow-2xl overflow-y-auto flex flex-col p-6 gap-5"
+    >
+      <!-- Header -->
+      <div class="flex items-center gap-3">
+        <button
+          @click="emit('close')"
+          class="text-gray-500 hover:text-black text-lg"
+        >
+          ✕
+        </button>
 
-      <h2>Crear reporte</h2>
+        <h2 class="text-2xl font-bold">Crear Reporte</h2>
+      </div>
 
-      <p class="street">
-        {{ street }}
-      </p>
+      <!-- Location card -->
+      <section class="border rounded-xl p-4 bg-blue-50">
+        <h3 class="font-semibold text-lg mb-2">Ubicación</h3>
 
-      <form>
-        <!-- Tipo de reporte a crear -->
-        <div class="field">
-          <label>Tag</label>
-          <select v-model="selectedTags" :disabled="isSelectDisabled" required>
-            <option disabled value="">Seleccione un tag</option>
+        <p class="text-gray-700">
+          {{ street }}
+        </p>
+      </section>
+
+      <!-- Notes -->
+      <section class="border rounded-xl p-4">
+        <h3 class="font-semibold text-lg mb-4">Notas</h3>
+
+        <textarea
+          v-model="notes"
+          rows="4"
+          placeholder="Escribe información adicional..."
+          class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </section>
+
+      <!-- Tags -->
+      <section class="border rounded-xl p-4">
+        <h3 class="font-semibold text-lg mb-4">Etiquetas</h3>
+
+        <!-- Existing tag selector -->
+        <div class="mb-4">
+          <label class="block mb-2 font-medium"> Etiqueta existente </label>
+
+          <select
+            v-model="selectedTag"
+            :disabled="isSelectDisabled"
+            class="w-full border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option disabled value="">Seleccione una opción</option>
+
             <option
               v-for="tag in tags"
               :key="tag._id"
@@ -59,114 +99,68 @@ onMounted(async () => {
             </option>
           </select>
         </div>
-        <!-- custom tag checkbox --->
-        <div class="checkbox-field">
-          <input id="customTag" type="checkbox" v-model="useCustomTag" />
 
-          <label for="customTag">Custom Tag</label>
+        <!-- Custom tag checkbox -->
+        <div class="flex items-center gap-2 mb-4">
+          <input
+            id="customTag"
+            type="checkbox"
+            v-model="useCustomTag"
+            class="h-4 w-4"
+          />
+
+          <label for="customTag"> Custom tag </label>
         </div>
 
-        <div class="field">
-          <label>Custom Descripción</label>
-          <textarea
-            v-model="customDescription"
-            rows="4"
-            placeholder="Describe el problema..."
-          ></textarea>
-        </div>
+        <!-- Custom fields -->
+        <template v-if="useCustomTag">
+          <div class="space-y-4">
+            <div>
+              <label class="block mb-2 font-medium"> Custom tag </label>
 
-        <button class="submit-btn" type="submit">Continuar</button>
-      </form>
+              <input
+                v-model="customTag"
+                type="text"
+                placeholder="custom tag"
+                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label class="block mb-2 font-medium"> Custom description </label>
+
+              <textarea
+                v-model="customDescription"
+                rows="3"
+                placeholder="custom description"
+                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-3 pt-2">
+        <button
+          @click="emit('close')"
+          class="px-4 py-2 border rounded-lg hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+
+        <button
+          class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Enviar Reporte
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  z-index: 2000;
-}
-
-.modal {
-  background: white;
-  width: 420px;
-  max-width: 90vw;
-
-  padding: 24px;
-  border-radius: 12px;
-
-  position: relative;
-
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.close-btn {
-  position: absolute;
-  right: 14px;
-  top: 14px;
-
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-.street {
-  color: #666;
-  margin-bottom: 20px;
-}
-
-.field {
-  margin-bottom: 16px;
-}
-
-label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-}
-
-input,
 textarea {
-  width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.submit-btn {
-  width: 100%;
-  padding: 12px;
-  cursor: pointer;
-}
-
-select {
-  width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-select:disabled {
-  background-color: #f0f0f0;
-  color: #888;
-  cursor: not-allowed;
-}
-
-.checkbox-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.checkbox-field label {
-  margin: 0;
-  font-weight: normal;
+  resize: vertical;
 }
 </style>
