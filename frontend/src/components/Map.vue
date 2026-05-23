@@ -131,6 +131,7 @@ function showPopup(lat, lng, street) {
 
 <style scoped>
 #map {
+  z-index: 1;
   height: 500px;
   width: 100%;
 }
