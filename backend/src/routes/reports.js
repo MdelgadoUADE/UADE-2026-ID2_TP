@@ -1,70 +1,64 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
 
-const Report = require('../models/Report');
+const Report = require("../models/Report");
 
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const report = new Report(req.body);
 
     const savedReport = await report.save();
 
-    res.status(201).json(savedReport);
-
+    res.status(201).json({
+      success: true,
+      report: savedReport,
+    });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      message: 'Error creating report'
+      success: false,
+      message: "Error creating report",
     });
   }
 });
 
-router.get('/:id', async (req, res) => {
-
+router.get("/:id", async (req, res) => {
   try {
-
     const report = await Report.findById(req.params.id);
 
     if (!report) {
       return res.status(404).json({
-        message: 'Report not found'
+        message: "Report not found",
       });
     }
 
     res.json(report);
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
-      message: 'Error fetching report'
+      message: "Error fetching report",
     });
   }
 });
 
-router.get('/', async (req, res) => {
-
+router.get("/", async (req, res) => {
   try {
-
     const reports = await Report.find();
 
     res.json(reports);
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
-      message: 'Error fetching reports'
+      message: "Error fetching reports",
     });
   }
 });
 
-router.get('/near/:id', async (req, res) => {
-
+router.get("/near/:id", async (req, res) => {
   try {
     const reportId = req.params.id;
 
@@ -72,7 +66,7 @@ router.get('/near/:id', async (req, res) => {
     const baseReport = await Report.findById(reportId);
 
     if (!baseReport) {
-      return res.status(404).json({ message: 'Report not found' });
+      return res.status(404).json({ message: "Report not found" });
     }
 
     const coordinates = baseReport.report_location.coordinates;
@@ -83,28 +77,26 @@ router.get('/near/:id', async (req, res) => {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: coordinates
+            coordinates: coordinates,
           },
-          $maxDistance: 50000 // 50km en metros
-        }
-      }
+          $maxDistance: 50000, // 50km en metros
+        },
+      },
     });
 
     // 3. Mapear respuesta
-    const result = nearbyReports.map(r => ({
+    const result = nearbyReports.map((r) => ({
       id: r._id,
       username: r.user?.username,
-      coordinates: r.report_location.coordinates
+      coordinates: r.report_location.coordinates,
     }));
 
     res.json(result);
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
-      message: 'Error fetching nearby reports'
+      message: "Error fetching nearby reports",
     });
   }
 });

@@ -1,22 +1,87 @@
 const express = require("express");
 const router = express.Router();
 
-const ReportType = require("../models/Tags");
+const Tag = require("../models/Tags");
 
 router.get("/", async (req, res) => {
   try {
-    const reportTypes = await ReportType.find();
+    const tags = await Tag.find();
 
     res.json({
       success: true,
-      reportTypes,
+      tags,
     });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
       success: false,
-      error: "Could not fetch report types",
+      error: "Could not fetch tags",
+    });
+  }
+});
+
+router.post("/", async (req, res) => {
+  try {
+    const { canonical_name, description, type = "otros" } = req.body;
+
+    /* validar el nombre del tag */
+    if (!canonical_name?.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "canonical_name is required",
+      });
+    }
+
+    /* Normalizar nombre */
+    const normalizedName = canonical_name.trim().toLowerCase();
+
+    /* revisar si existe */
+    const existingTag = await Tag.findOne({
+      canonical_name: normalizedName,
+    });
+
+    if (existingTag) {
+      return res.json({
+        success: true,
+        tag: existingTag,
+        alreadyExists: true,
+      });
+    }
+
+    /* crear tag nuevo */
+    const newTag = await Tag.create({
+      canonical_name: normalizedName,
+      description: description || "",
+      type,
+      is_system: false,
+    });
+
+    return res.status(201).json({
+      success: true,
+      tag: newTag,
+      alreadyExists: false,
+    });
+  } catch (error) {
+    console.error(error);
+
+    /* manejador de condicion de carrera 
+     si el tag ya existe (dos usuarios hicieron click al mismo tiempo) entonces se devuelve el tag existente */
+    if (error.code === 11000) {
+      const existingTag = await Tag.findOne({
+        canonical_name: req.body.canonical_name.trim().toLowerCase(),
+      });
+
+      return res.json({
+        success: true,
+        tag: existingTag,
+        alreadyExists: true,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Could not create tag",
     });
   }
 });

@@ -1,20 +1,24 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 
-defineProps({
+const props = defineProps({
   visible: Boolean,
   street: String,
+  lat: Number,
+  lng: Number,
 });
 
 const emit = defineEmits(["close"]);
 
 const tags = ref([]);
-const selectedTags = ref("");
+const selectedTag = ref("");
 
 const useCustomTag = ref(false);
-
 const customTag = ref("");
 const customDescription = ref("");
+const notes = ref("");
+
+const isSubmitting = ref(false);
 
 const isSelectDisabled = computed(() => useCustomTag.value);
 
@@ -31,12 +35,94 @@ onMounted(async () => {
     console.error("Failed to load tags:", error);
   }
 });
+
+async function handleSubmit() {
+  try {
+    isSubmitting.value = true;
+
+    let tagToUse = selectedTag.value;
+
+    /* Creando tag si no existe */
+    if (useCustomTag.value) {
+      if (!customTag.value.trim()) {
+        alert("Debes ingresar un nombre de tag");
+        return;
+      }
+
+      const tagResponse = await fetch("http://localhost:3000/tags", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          canonical_name: customTag.value,
+          description: customDescription.value,
+          type: "otros",
+        }),
+      });
+
+      const tagData = await tagResponse.json();
+
+      if (!tagData.success) {
+        throw new Error("No se pudo crear el tag");
+      }
+
+      tagToUse = tagData.tag.canonical_name;
+    }
+
+    /* Creando reporte */
+
+    const reportResponse = await fetch("http://localhost:3000/reports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        notes: notes.value,
+
+        tags: {
+          main: tagToUse,
+        },
+
+        report_location: {
+          type: "Point",
+          coordinates: [props.lng, props.lat],
+        },
+      }),
+    });
+
+    const reportData = await reportResponse.json();
+
+    if (!reportData.success) {
+      throw new Error("No se pudo crear el reporte");
+    }
+
+    alert("Reporte enviado");
+
+    emit("close");
+
+    /*
+      Reset form
+    */
+    selectedTag.value = "";
+    customTag.value = "";
+    customDescription.value = "";
+    notes.value = "";
+    useCustomTag.value = false;
+  } catch (error) {
+    console.error(error);
+
+    alert("Ocurrió un error enviando el reporte");
+  } finally {
+    isSubmitting.value = false;
+  }
+}
 </script>
 
 <template>
   <div
     v-if="visible"
-    class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center md:p-4"
+    class="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center md:p-4"
   >
     <!-- Modal -->
     <div
@@ -150,9 +236,11 @@ onMounted(async () => {
         </button>
 
         <button
-          class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          @click="handleSubmit"
+          :disabled="isSubmitting"
+          class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          Enviar Reporte
+          {{ isSubmitting ? "Enviando..." : "Enviar Reporte" }}
         </button>
       </div>
     </div>
