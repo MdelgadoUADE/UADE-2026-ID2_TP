@@ -13,6 +13,9 @@ let map;
 const showReportModal = ref(false);
 const selectedStreet = ref("");
 
+const selectedLat = ref(null);
+const selectedLng = ref(null);
+
 //funcion manejadora del mapa
 onMounted(() => {
   // Default center
@@ -47,7 +50,7 @@ onMounted(() => {
         map.setMaxBounds(bounds);
 
         // Add marker
-        L.marker([lat, lng]).addTo(map).bindPopup("estas aqui!").openPopup();
+        //L.marker([lat, lng]).addTo(map).bindPopup("estas aqui!").openPopup();
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -111,6 +114,11 @@ function showPopup(lat, lng, street) {
 
     if (btn) {
       btn.addEventListener("click", () => {
+        map.closePopup();
+
+        selectedLat.value = lat;
+        selectedLng.value = lng;
+
         showReportModal.value = true;
         selectedStreet.value = street;
       });
@@ -125,13 +133,14 @@ function showPopup(lat, lng, street) {
   <CreateReport
     :visible="showReportModal"
     :street="selectedStreet"
+    :lat="selectedLat"
+    :lng="selectedLng"
     @close="showReportModal = false"
   />
 </template>
 
 <style scoped>
 #map {
-  z-index: 1;
   height: 500px;
   width: 100%;
 }
