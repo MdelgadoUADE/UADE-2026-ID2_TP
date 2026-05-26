@@ -1,153 +1,161 @@
-# TPO
+# UADE 2026 - ID2 TP
 
-## Consignas Generales
+Aplicación web desarrollada utilizando Vue, Node.js, MongoDB y PostgreSQL.
+El proyecto utiliza Docker para garantizar un entorno reproducible y evitar problemas de dependencias.
+---
 
-**A.** Formular una empresa ficticia o tomar una empresa real (con acceso real a la posibilidad de aplicar lo desarrollado en este trabajo) de base tecnológica y que aplique sobre el tema dado por la cátedra.
+# 🚀 Technologies
 
-**B.** Cada grupo de trabajo hará una presentación inicial de a lo sumo 5 minutos explicando al resto del curso cuál es la empresa ficticia (o real) elegida. Esta presentación debe incluir una infografía.
-
-📅 **Fecha de 1° presentación:** 27/03 📅
-
-**C.** Durante las clases cada grupo podrá realizar consultas sobre su TP, respetando los tiempos y colaborando con los otros grupos.
-
-**D.** Cada grupo realizará:
-- Un video de hasta 5 minutos  
-- Un informe de hasta 10 hojas  
-
-(La cátedra puede modificar estos límites según el avance de la cursada).
-
-📅 **Fecha de entrega del material final:** 05/06 hasta las 18:30 hs. 📅
-
-**E.** Además de la entrega final, los grupos deberán realizar exposiciones finales:
-- Duración (max): 10 minutos de presentación  
-- 5 minutos de preguntas (o según criterio del docente)
-
-📅 **Fechas de exposiciones finales:** 05/06 y 12/06 📅
+- Frontend: Vue 3 + Vite
+- Backend: Node.js + Express
+- Database (SQL): PostgreSQL
+- Database (NoSQL): MongoDB
+- Containerization: Docker & Docker Compose
 
 ---
 
-# TP Integrador
+# 📦 Requirements
 
-## 1. Identidad de la empresa
-- Denominación de la empresa u organización  
-- Logo  
-- Nombre  
-- Slogan  
-- Imagen institucional  
+Antes de ejecutar el proyecto, asegurarse de tener instalado:
 
----
+| Software | Version |
+|---|---|
+| Docker Desktop | 4.x+ |
+| Node.js | 20.x |
+| Git | Latest |
 
-## 2. Definiciones
-- Sector  
-- Rubro  
-- Misión  
-- Visión  
-- Objetivos  
-- Valores  
+## Notes
+
+
+- > ⚠️ Docker Desktop debe estar ejecutándose antes de levantar el entorno.
+- Node.js se utiliza únicamente para tareas de desarrollo local y tooling.
+- Todas las dependencias de runtime son manejadas dentro de Docker.
 
 ---
 
-## 3. Productos o servicios
-Describir el o los productos o servicios que ofrece la empresa.
+# ⚙️ Environment Setup
+
+Clonar el repositorio:
+
+```bash
+git clone https://github.com/MdelgadoUADE/UADE-2026-ID2_TP.git
+cd UADE-2026-ID2_TP
+```
+
+## 1. Usage
+
+Levantar todos los servicios:
+
+```bash
+docker compose up --build
+```
+
+Esto iniciará:
+
+- Frontend Vue
+- Backend Node.js
+- MongoDB
+- PostgreSQL
+
+
+## 2. Available Services
+
+| Service | URL / Port |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:3000 |
+| MongoDB | localhost:27017 |
+| PostgreSQL | localhost:5432 |
 
 ---
 
-## 4. Mercado
+# 🛑 Stop Services
 
-### 4.1 Análisis del entorno
-- Geográfico  
-- Socioeconómico  
-- Zona / lugar  
-- Costumbres  
-- Poder adquisitivo  
+Detener containers:
 
-### 4.2 Clientes y competencia
-- Clientes  
-- Necesidades  
-- Competencia existente y potencial  
+```bash
+docker compose down
+```
 
----
+Detener y eliminar volúmenes:
 
-## 5. Análisis FODA
-Desarrollar un análisis FODA del proyecto.
+```bash
+docker compose down -v
+```
 
 ---
 
-## 6. Organización
-- Elaborar el organigrama  
-- Describir funciones, tareas y procedimientos realizados dentro de la organización
+# 🗂️ Project Structure
 
-*(Si la organización es muy grande, enfocarse en un sector/área/división)*
+```bash
+.
+├── backend/
+├── frontend/
+├── mongo-init/
+├── docker-compose.yml
+└── README.md
+```
 
----
-
-## 7. Puestos de trabajo
-- Describir los puestos  
-- Requisitos de cada uno  
-- Cantidad de personas necesarias  
-
----
-
-## 8. Estrategias
-Diseñar **3 estrategias** para lograr los objetivos de la empresa, alineadas con la **Misión** y la **Visión**.
 
 ---
 
-## 9. Aplicación de contenidos de la materia
+# 🐳 Docker Notes
 
-### Unidad I
-- Concepto de NoSQL  
-- Modelo relacional vs no relacional  
-- Criterios de selección entre ambos modelos
-- Relación con los volumenes de datos y consultas  
-- ACID en NoSQL  
+- Cada servicio corre en su propio contenedor.
+- Docker Compose maneja la red interna automáticamente.
+- Los servicios se comunican usando el nombre definido en `docker-compose.yml`.
 
-### Unidad II
-- Distiontos Modelos NoSQL  
-- Implementación y funcionamiento de cada uno 
-- Comparación de soluciones  
+Ejemplo:
 
-### Unidad III
-- Administración y recuperación desde fuentes de datos no estructurados  
-- Interfaces de administración  
-- Técnicas de acceso  
-- Distribución de datos  
-- Escalamiento horizontal  
-
-### Unidad IV
-- Replicación y particionamiento  
-- Teorema CAP  
-- Modelos de replicación:
-  - Master-Slave  
-  - Master-Master  
-  - Peer-to-peer  
-- Critrios de Aprisionamiento
-- Tipos de consistencia:
-  - Eventual  
-  - Por quorum  
-  - Plena de escritura  
-  - Plena de lectura  
-
-### Unidad V
-- Acceso a estructura NoSQL desde aplicaciones  
-- Herramientas de conectividad  
-- Evaluación de resultados  
-
-### Unidad VI
-- Big Data  
-- Integración con Data Marts  
-- Comparación de rendimientos con bases relacionales  
+```bash
+mongodb://mongo:27017
+```
 
 ---
 
-⚠️ **Importante:**  
-Las técnicas y teorías vistas en la cursada deben ser consideradas, pero se pueden incorporar otras adicionales en la solución.
+# 🔧 Troubleshooting
+
+## Error de puertos ocupados
+
+Verificar que los siguientes puertos no estén siendo utilizados:
+
+- 3000
+- 5173
+- 27017
+- 5432
+
+## Comandos útiles
+```bash
+docker compose ps
+docker compose logs
+docker compose logs -f # real time
+docker compose logs <service> # backend, frontend, mongo
+docker compose restart
+docker compose restart <service> # backend, frontend, mongo
+docker compose up --build
+docker compose down -v # ⚠️ Esto elimina los volumenes persistentes, incluyendo datos de MongoDB y PostgreSQL
+docker compose exec mongo mongosh # Ejeutar comandos dentro (ej: show dbs)
+
+```
+
 
 ---
 
-## 10. Prototipo
-Desarrollar un prototipo del producto/servicio que permita visualizar la funcionalidad principal.
 
-# Notas
+# 🍃 MongoDB Compass
 
-Nos dan un tema puntual con info inicial, luego competimos con otros equipos para una propuesta de negocio mejor, desarrollo (forma en la que se abordan los datos y como se pueden explotar). Generar un producto con un valor agregado.  Nos dan un dataset y tenemos que trabajar sobre el, esto tampoco significa que solo nos tenemos que quedar con el data set (hay que agregarle valor). Tiene que existir una investigación para darle ese valor/información extra.
+Para visualizar e interactuar con la base de datos MongoDB se recomienda instalar:
+
+- MongoDB Compass
+
+Una vez iniciado el entorno Docker, conectarse utilizando:
+
+```bash
+mongodb://localhost:27017
+```
+
+## Notes
+
+- MongoDB corre dentro de un contenedor Docker.
+- El puerto `27017` se encuentra expuesto al host mediante Docker Compose.
+- Compass debe instalarse localmente en el host.
