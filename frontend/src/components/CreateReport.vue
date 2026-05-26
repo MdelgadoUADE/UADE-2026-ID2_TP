@@ -78,6 +78,12 @@ async function handleSubmit() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        user: {
+          user_id:null,
+          username: "Canario2",
+          surname: "Cana",
+          email: ""
+        },
         notes: notes.value,
 
         tags: {

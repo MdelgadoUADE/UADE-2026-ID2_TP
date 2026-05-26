@@ -82,17 +82,17 @@ function getStatusColor(status) {
 
         <p>
           <strong>Username:</strong>
-          {{ report.user.username }}
+          {{ report.user?.username }}
         </p>
 
         <p>
           <strong>Nombre:</strong>
-          {{ report.user.surname }}
+          {{ report.user?.surname }}
         </p>
 
         <p>
           <strong>Email:</strong>
-          {{ report.user.email }}
+          {{ report.user?.email }}
         </p>
 
         <p>
