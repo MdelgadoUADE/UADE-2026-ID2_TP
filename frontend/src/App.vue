@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref } from 'vue'
+import { ref, provide } from 'vue'
 
 import LoginForm from './components/LoginForm.vue'
 import RegisterForm from './components/RegisterForm.vue'
@@ -10,6 +10,8 @@ const isLogged = ref(false)
 const currentUser = ref(null)
 const view = ref('login') // 'login' | 'register'
 
+
+provide('currentUser', currentUser)
 
 function onLoginSuccess(user) {
   currentUser.value = user     // user tiene: user_id, username, surname, email, role

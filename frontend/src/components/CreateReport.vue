@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, inject } from "vue";
 
 const props = defineProps({
   visible: Boolean,
@@ -10,9 +10,10 @@ const props = defineProps({
 
 const emit = defineEmits(["close"]);
 
-const tags = ref([]);
-const selectedTag = ref("");
+const currentUser = inject('currentUser')
 
+const tags = ref([]);
+const selectedTag = ref(""); 
 const useCustomTag = ref(false);
 const customTag = ref("");
 const customDescription = ref("");
@@ -78,18 +79,19 @@ async function handleSubmit() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        user: {
-          user_id:null,
-          username: "Canario2",
-          surname: "Cana",
-          email: ""
-        },
+        user: currentUser.value
+          ? {
+            user_id: currentUser.value.user_id,
+            username: currentUser.value.username,
+            surname: currentUser.value.surname,
+            email: currentUser.value.email,
+          }
+          : null,
+        is_anonymous: !currentUser.value,
         notes: notes.value,
-
         tags: {
           main: tagToUse,
         },
-
         report_location: {
           type: "Point",
           coordinates: [props.lng, props.lat],
