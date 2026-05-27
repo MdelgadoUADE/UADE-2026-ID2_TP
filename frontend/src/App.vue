@@ -3,15 +3,22 @@
 import { ref } from 'vue'
 
 import LoginForm from './components/LoginForm.vue'
+import RegisterForm from './components/RegisterForm.vue'
 import Dashboard from './components/Dashboard.vue'
 
 const isLogged = ref(false)
+const currentUser = ref(null)
+const view = ref('login') // 'login' | 'register'
 
-const currentUser = ref(null)  
 
 function onLoginSuccess(user) {
   currentUser.value = user     // user tiene: user_id, username, surname, email, role
   isLogged.value = true
+}
+
+function onRegisterSuccess() {
+  // Tras registrarse exitosamente, volver al login
+  view.value = 'login'
 }
 
 function logout() {
@@ -22,10 +29,21 @@ function logout() {
 </script>
 
 <template>
-  <LoginForm
-    v-if="!isLogged"
-    @login-success="onLoginSuccess"
-  />
+  <template v-if="!isLogged">
+
+    <LoginForm
+      v-if="view === 'login'"
+      @login-success="onLoginSuccess"
+      @go-to-register="view = 'register'"
+    />
+
+    <RegisterForm
+      v-else
+      @register-success="onRegisterSuccess"
+      @go-to-login="view = 'login'"
+    />
+
+  </template>
 
   <Dashboard
     v-else

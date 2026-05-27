@@ -8,7 +8,7 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 
-const emit = defineEmits(['login-success'])
+const emit = defineEmits(['login-success', 'go-to-register'])
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -171,6 +171,14 @@ async function handleSubmit(e) {
           </button>
 
         </form>
+
+
+      <div class="mt-4 text-center text-sm text-gray-500">
+          ¿No tenés cuenta?
+          <button type="button" @click="emit('go-to-register')" class="text-blue-600 hover:underline font-medium ml-1">
+            Registrate
+          </button>
+        </div>
 
         <!-- Secure -->
         <div
