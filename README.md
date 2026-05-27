@@ -4,6 +4,10 @@ Aplicación web desarrollada utilizando Vue, Node.js, MongoDB y PostgreSQL.
 El proyecto utiliza Docker para garantizar un entorno reproducible y evitar problemas de dependencias.
 ---
 
+# ⌨️​ Test Credentials
+- email: testuser@reportit.com
+- password: test1234
+
 # 🚀 Technologies
 
 - Frontend: Vue 3 + Vite
