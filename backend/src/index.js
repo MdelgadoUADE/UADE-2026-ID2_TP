@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const connectMongo = require("./config/mongo");
 const { connectPostgres } = require("./config/postgres");
+const { runSeed } = require('./config/seed')  // script para mock data en DB
 
 const reportsRoutes = require("./routes/reports");
 const reportTags = require("./routes/tags");
@@ -23,6 +24,7 @@ const PORT = 3000;
 async function startServer() {
   await connectMongo();
   await connectPostgres(); 
+  await runSeed();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
