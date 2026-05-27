@@ -1,5 +1,8 @@
 <script setup>
-import { ref, onMounted, computed, inject } from "vue";
+import { ref, onMounted, computed, inject, watch } from "vue";
+import { TAG_INPUT_CONFIG, DEFAULT_TAG_CONFIG } from '../config/tagInputConfig.js'
+
+
 
 const props = defineProps({
   visible: Boolean,
@@ -9,6 +12,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close"]);
+
+const selectedTagValue = ref('')
 
 const currentUser = inject('currentUser')
 
@@ -22,6 +27,17 @@ const notes = ref("");
 const isSubmitting = ref(false);
 
 const isSelectDisabled = computed(() => useCustomTag.value);
+
+// Computed que devuelve la config del tag actualmente seleccionado
+const currentTagConfig = computed(() => {
+  if (!selectedTag.value) return null
+  return TAG_INPUT_CONFIG[selectedTag.value] ?? DEFAULT_TAG_CONFIG
+})
+
+// Limpiar el valor cuando cambia el tag seleccionado
+watch(selectedTag, () => {
+  selectedTagValue.value = ''
+})
 
 onMounted(async () => {
   try {
@@ -41,7 +57,8 @@ async function handleSubmit() {
   try {
     isSubmitting.value = true;
 
-    let tagToUse = selectedTag.value;
+    let tagToUse = selectedTag.value
+    let tagValue = selectedTagValue.value
 
     /* Creando tag si no existe */
     if (useCustomTag.value) {
@@ -89,8 +106,9 @@ async function handleSubmit() {
           : null,
         is_anonymous: !currentUser.value,
         notes: notes.value,
-        tags: {
+        tags: { // Ver si esto funciona
           main: tagToUse,
+          value: tagValue || null
         },
         report_location: {
           type: "Point",
@@ -117,6 +135,8 @@ async function handleSubmit() {
     customDescription.value = "";
     notes.value = "";
     useCustomTag.value = false;
+    selectedTagValue.value = '';
+  
   } catch (error) {
     console.error(error);
 
@@ -174,24 +194,42 @@ async function handleSubmit() {
         <h3 class="font-semibold text-lg mb-4">Etiquetas</h3>
 
         <!-- Existing tag selector -->
-        <div class="mb-4">
-          <label class="block mb-2 font-medium"> Etiqueta existente </label>
+       <div class="mb-4">
+          <label class="block mb-2 font-medium">Etiqueta existente</label>
 
-          <select
-            v-model="selectedTag"
-            :disabled="isSelectDisabled"
-            class="w-full border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <select v-model="selectedTag" :disabled="isSelectDisabled"
+            class="w-full border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option disabled value="">Seleccione una opción</option>
-
-            <option
-              v-for="tag in tags"
-              :key="tag._id"
-              :value="tag.canonical_name"
-            >
+            <option v-for="tag in tags" :key="tag._id" :value="tag.canonical_name">
               {{ tag.canonical_name }}
             </option>
           </select>
+        </div>
+
+        <!-- Input dinámico según el tag seleccionado -->
+        <div v-if="selectedTag && currentTagConfig" class="mb-4">
+          <label class="block mb-2 font-medium">
+            Valor para <span class="text-blue-600">{{ selectedTag }}</span>
+          </label>
+
+          <!-- SELECT: opciones predefinidas -->
+          <select v-if="currentTagConfig.input_type === 'select'" v-model="selectedTagValue"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option disabled value="">Seleccione una opción</option>
+            <option v-for="opt in currentTagConfig.options" :key="opt" :value="opt">
+              {{ opt }}
+            </option>
+          </select>
+
+          <!-- NUMBER: valor numérico -->
+          <input v-else-if="currentTagConfig.input_type === 'number'" v-model="selectedTagValue" type="number"
+            :placeholder="currentTagConfig.placeholder" :min="currentTagConfig.min" :max="currentTagConfig.max"
+            :step="currentTagConfig.step ?? 1"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <!-- TEXT: texto libre (fallback y tags como patente, modelo) -->
+          <input v-else v-model="selectedTagValue" type="text" :placeholder="currentTagConfig.placeholder"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
 
         <!-- Custom tag checkbox -->
