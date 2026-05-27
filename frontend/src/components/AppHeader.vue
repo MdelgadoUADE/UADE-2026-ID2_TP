@@ -1,10 +1,19 @@
 <script setup>
 
-defineProps({
+//defineProps({
+//
+//  username: String,
+//
+//  activeTab: String
+//})
 
+const props = defineProps({
   username: String,
-
-  activeTab: String
+  activeTab: String,
+  emergencyMode: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits([
@@ -16,20 +25,24 @@ const emit = defineEmits([
 
 <template>
 
-  <header
-    class="bg-gray-900 text-white px-6 py-4 flex items-center justify-between"
-  >
-
-    <!-- LEFT -->
-    <div
-      class="flex items-center gap-10"
-    >
-
-      <h1
-        class="text-2xl font-bold"
-      >
-        Report-IT
-      </h1>
+  <header :class="[
+    'px-6 py-4 flex items-center justify-between shadow-sm',
+    emergencyMode
+      ? 'bg-red-600 text-white'
+      : 'bg-white text-gray-900'
+  ]">
+    <!-- Logo -->
+    <div class="flex items-center gap-2">
+      <div :class="[
+        'flex items-center justify-center w-8 h-8 rounded-lg',
+        emergencyMode ? 'bg-red-800' : 'bg-blue-600'
+      ]">
+        <MapPin class="w-4 h-4 text-white" />
+      </div>
+      <span class="font-bold text-lg">Report-IT</span>
+      <span v-if="emergencyMode" class="ml-2 text-xs font-bold bg-red-800 text-white px-2 py-0.5 rounded-full">
+        MODO EMERGENCIA
+      </span>
 
       <!-- NAV -->
       <nav
