@@ -7,33 +7,29 @@ import Dashboard from './components/Dashboard.vue'
 
 const isLogged = ref(false)
 
-const username = ref('juan.perez')
+const currentUser = ref(null)  
 
-function onLoginSuccess() {
-
+function onLoginSuccess(user) {
+  currentUser.value = user     // user tiene: user_id, username, surname, email, role
   isLogged.value = true
 }
 
 function logout() {
-
   isLogged.value = false
+  currentUser.value = null
 }
 
 </script>
 
 <template>
-
-  <!-- LOGIN -->
   <LoginForm
     v-if="!isLogged"
     @login-success="onLoginSuccess"
   />
 
-  <!-- DASHBOARD -->
   <Dashboard
     v-else
-    :username="username"
+    :username="currentUser.username"
     @logout="logout"
   />
-
 </template>

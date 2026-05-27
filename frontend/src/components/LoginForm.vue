@@ -15,12 +15,29 @@ const error = ref('')
 const isLoading = ref(false)
 
 async function login(emailValue, passwordValue) {
+  try {
+    const response = await fetch('http://localhost:3000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailValue, password: passwordValue })
+    })
 
-  // Simulacion login
-  console.log(emailValue, passwordValue)
+    const data = await response.json()
 
-  return true
+    if (!data.success) {
+      error.value = data.message || 'Credenciales inválidas'
+      return false
+    }
+
+    emit('login-success', data.user)  // <-- pasar el usuario completo al padre
+    return true
+
+  } catch (e) {
+    error.value = 'Error de conexión con el servidor'
+    return false
+  }
 }
+
 
 function enterEmergencyMode() {
 
@@ -39,22 +56,8 @@ async function handleSubmit(e) {
   }
 
   isLoading.value = true
-
-  const success = await login(
-    email.value,
-    password.value
-  )
-
+  await login(email.value, password.value)
   isLoading.value = false
-
-  if (!success) {
-
-    error.value = 'Credenciales invalidas'
-
-  } else {
-
-    emit('login-success')
-  }
 }
 </script>
 
