@@ -36,6 +36,8 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: app_db
+      TZ: UTC
+      PGTZ: UTC 
     ports:
       - "5432:5432"
 
