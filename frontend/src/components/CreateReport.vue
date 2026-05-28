@@ -1,5 +1,8 @@
 <script setup>
-import { ref, onMounted, computed, inject } from "vue";
+import { ref, onMounted, computed, inject, watch } from "vue";
+import { TAG_INPUT_CONFIG, DEFAULT_TAG_CONFIG } from '../config/tagInputConfig.js'
+
+
 
 const props = defineProps({
   visible: Boolean,
@@ -12,16 +15,77 @@ const emit = defineEmits(["close"]);
 
 const currentUser = inject('currentUser')
 
-const tags = ref([]);
-const selectedTag = ref(""); 
+// Tags
+const allTags = ref([])
+const selectedCategory = ref('')
+const selectedTag = ref('')
+const selectedTagValue = ref('')
+const addedTags = ref([])
 const useCustomTag = ref(false);
 const customTag = ref("");
 const customDescription = ref("");
+
+// Categorías disponibles basadas en el tipo del schema
+const categories = [
+  { value: 'vehiculo', label: '🚗 Vehículo' },
+  { value: 'persona',  label: '🧍 Persona'  },
+  { value: 'ambiente', label: '🌆 Ambiente' },
+  { value: 'otros',    label: '📌 Otros'    },
+]
+
+// Tags filtrados según la categoría seleccionada
+const filteredTags = computed(() =>
+  allTags.value.filter(t => t.type === selectedCategory.value)
+)
+
 const notes = ref("");
 
 const isSubmitting = ref(false);
 
 const isSelectDisabled = computed(() => useCustomTag.value);
+
+// Computed que devuelve la config del tag actualmente seleccionado
+const currentTagConfig = computed(() => {
+  if (!selectedTag.value) return null
+  return TAG_INPUT_CONFIG[selectedTag.value] ?? DEFAULT_TAG_CONFIG
+})
+
+// Computed que chequea si el tag actual ya fue agregado
+const isTagAlreadyAdded = computed(() =>
+  addedTags.value.some(t => t.canonical_name === selectedTag.value)
+)
+
+function addTag() {
+  if (!selectedTag.value) return
+  if (isTagAlreadyAdded.value) {
+    alert('Este tag ya fue agregado')
+    return
+  }
+    addedTags.value.push({
+    canonical_name: selectedTag.value,
+    value: selectedTagValue.value || null
+  })
+
+  // Reset selección
+  selectedTag.value = ''
+  selectedTagValue.value = ''
+}
+
+function removeTag(index) {
+  addedTags.value.splice(index, 1)
+}
+
+// Limpiar el valor cuando cambia el tag seleccionado
+watch(selectedTag, () => {
+  selectedTagValue.value = ''
+})
+
+
+// Limpiar tag y valor al cambiar categoría
+watch(selectedCategory, () => {
+  selectedTag.value = ''
+  selectedTagValue.value = ''
+})
 
 onMounted(async () => {
   try {
@@ -30,7 +94,7 @@ onMounted(async () => {
     const data = await response.json();
 
     if (data.success) {
-      tags.value = data.tags;
+      allTags.value = data.tags;
     }
   } catch (error) {
     console.error("Failed to load tags:", error);
@@ -41,7 +105,12 @@ async function handleSubmit() {
   try {
     isSubmitting.value = true;
 
-    let tagToUse = selectedTag.value;
+    let tagToUse = selectedTag.value
+    let tagValue = selectedTagValue.value
+    const tagsObject = addedTags.value.reduce((acc, tag) => {
+      acc[tag.canonical_name] = tag.value
+      return acc
+    }, {})
 
     /* Creando tag si no existe */
     if (useCustomTag.value) {
@@ -89,9 +158,7 @@ async function handleSubmit() {
           : null,
         is_anonymous: !currentUser.value,
         notes: notes.value,
-        tags: {
-          main: tagToUse,
-        },
+        tags: tagsObject,
         report_location: {
           type: "Point",
           coordinates: [props.lng, props.lat],
@@ -117,6 +184,10 @@ async function handleSubmit() {
     customDescription.value = "";
     notes.value = "";
     useCustomTag.value = false;
+    selectedTagValue.value = '';
+    addedTags.value = []
+
+  
   } catch (error) {
     console.error(error);
 
@@ -170,68 +241,111 @@ async function handleSubmit() {
       </section>
 
       <!-- Tags -->
-      <section class="border rounded-xl p-4">
+     <section class="border rounded-xl p-4">
         <h3 class="font-semibold text-lg mb-4">Etiquetas</h3>
 
-        <!-- Existing tag selector -->
-        <div class="mb-4">
-          <label class="block mb-2 font-medium"> Etiqueta existente </label>
+        <!-- Paso 1: Categoría -->
+        <div class="mb-3">
+          <label class="block mb-2 font-medium">Categoría</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button v-for="cat in categories" :key="cat.value" type="button" @click="selectedCategory = cat.value"
+              :class="[
+                'px-3 py-2 rounded-lg border text-sm font-medium transition-colors',
+                selectedCategory === cat.value
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+              ]">
+              {{ cat.label }}
+            </button>
+          </div>
+        </div>
 
-          <select
-            v-model="selectedTag"
-            :disabled="isSelectDisabled"
-            class="w-full border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option disabled value="">Seleccione una opción</option>
+        <!-- Paso 2: Tag de la categoría -->
+        <div v-if="selectedCategory" class="mb-3">
+          <label class="block mb-2 font-medium">Etiqueta</label>
 
-            <option
-              v-for="tag in tags"
-              :key="tag._id"
-              :value="tag.canonical_name"
-            >
+          <div v-if="filteredTags.length === 0" class="text-sm text-gray-400 italic">
+            No hay etiquetas disponibles para esta categoría.
+          </div>
+
+          <select v-else v-model="selectedTag"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option disabled value="">Seleccione una etiqueta</option>
+            <option v-for="tag in filteredTags" :key="tag._id" :value="tag.canonical_name">
               {{ tag.canonical_name }}
             </option>
           </select>
         </div>
 
-        <!-- Custom tag checkbox -->
-        <div class="flex items-center gap-2 mb-4">
-          <input
-            id="customTag"
-            type="checkbox"
-            v-model="useCustomTag"
-            class="h-4 w-4"
-          />
+        <!-- Paso 3: Valor del tag -->
+        <div v-if="selectedTag && currentTagConfig" class="mb-3">
+          <label class="block mb-2 font-medium">
+            Valor para <span class="text-blue-600">{{ selectedTag }}</span>
+          </label>
 
-          <label for="customTag"> Custom tag </label>
+          <select v-if="currentTagConfig.input_type === 'select'" v-model="selectedTagValue"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option disabled value="">Seleccione una opción</option>
+            <option v-for="opt in currentTagConfig.options" :key="opt" :value="opt">
+              {{ opt }}
+            </option>
+          </select>
+
+          <input v-else-if="currentTagConfig.input_type === 'number'" v-model="selectedTagValue" type="number"
+            :placeholder="currentTagConfig.placeholder" :min="currentTagConfig.min" :max="currentTagConfig.max"
+            :step="currentTagConfig.step ?? 1"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
+          <input v-else v-model="selectedTagValue" type="text" :placeholder="currentTagConfig.placeholder"
+            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
 
-        <!-- Custom fields -->
+        <!-- Botón agregar -->
+        <button type="button" @click="addTag" :disabled="!selectedTag"
+          class="mb-4 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium">
+          + Agregar etiqueta
+        </button>
+
+        <!-- Tags agregados -->
+        <div v-if="addedTags.length > 0" class="space-y-2">
+          <label class="block text-sm font-medium text-gray-600">Etiquetas agregadas</label>
+          <div v-for="(tag, index) in addedTags" :key="index"
+            class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="font-medium text-blue-700">{{ tag.canonical_name }}</span>
+              <span v-if="tag.value" class="text-gray-500">→ {{ tag.value }}</span>
+              <span v-else class="text-gray-400 italic">sin valor</span>
+            </div>
+            <button type="button" @click="removeTag(index)"
+              class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <p v-else class="text-sm text-gray-400 italic">No hay etiquetas agregadas aún.</p>
+
+        <!-- Custom tag (sin cambios) -->
+        <div class="flex items-center gap-2 mt-4 mb-4">
+          <input id="customTag" type="checkbox" v-model="useCustomTag" class="h-4 w-4" />
+          <label for="customTag">Custom tag</label>
+        </div>
+
         <template v-if="useCustomTag">
           <div class="space-y-4">
             <div>
-              <label class="block mb-2 font-medium"> Custom tag </label>
-
-              <input
-                v-model="customTag"
-                type="text"
-                placeholder="custom tag"
-                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label class="block mb-2 font-medium">Custom tag</label>
+              <input v-model="customTag" type="text" placeholder="custom tag"
+                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
-
             <div>
-              <label class="block mb-2 font-medium"> Custom description </label>
-
-              <textarea
-                v-model="customDescription"
-                rows="3"
-                placeholder="custom description"
-                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label class="block mb-2 font-medium">Custom description</label>
+              <textarea v-model="customDescription" rows="3" placeholder="custom description"
+                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
         </template>
+
       </section>
 
       <!-- Footer -->
