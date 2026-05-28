@@ -4,7 +4,8 @@ import {
   Clock3,
   ShieldCheck,
   User,
-  FileText
+  FileText,
+  Radar
 } from 'lucide-vue-next'
 
 import ReportTagList from './ReportTagList.vue'
@@ -17,6 +18,11 @@ defineProps({
 function formatDate(date) {
   return new Date(date).toLocaleString()
 }
+
+const emit = defineEmits([
+  'find-nearby'
+])
+
 </script>
 
 <template>
@@ -70,6 +76,33 @@ function formatDate(date) {
         </div>
 
       </div>
+
+      <div>
+
+    <button
+        @click="emit('find-nearby', report._id)"
+        class="
+        flex
+        items-center
+        gap-2
+        bg-blue-600
+        hover:bg-blue-700
+        text-white
+        px-5
+        py-3
+        rounded-xl
+        transition-colors
+        font-medium
+        "
+    >
+
+        <Radar class="w-5 h-5" />
+
+        Encontrar reportes cercanos
+
+    </button>
+
+    </div>
 
       <div
         class="

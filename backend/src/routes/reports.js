@@ -59,40 +59,46 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/near/:id", async (req, res) => {
+
   try {
+
     const reportId = req.params.id;
 
-    // 1. Buscar reporte base
+    // Buscar reporte base
     const baseReport = await Report.findById(reportId);
 
     if (!baseReport) {
-      return res.status(404).json({ message: "Report not found" });
+
+      return res.status(404).json({
+        message: "Report not found",
+      });
     }
 
-    const coordinates = baseReport.report_location.coordinates;
+    const coordinates =
+      baseReport.report_location.coordinates;
 
-    // 2. Buscar reportes cercanos (50km)
+    // Buscar cercanos
     const nearbyReports = await Report.find({
+
       report_location: {
+
         $near: {
+
           $geometry: {
             type: "Point",
-            coordinates: coordinates,
+            coordinates,
           },
-          $maxDistance: 50000, // 50km en metros
+
+          $maxDistance: 50000,
         },
       },
     });
 
-    // 3. Mapear respuesta
-    const result = nearbyReports.map((r) => ({
-      id: r._id,
-      username: r.user?.username,
-      coordinates: r.report_location.coordinates,
-    }));
+    // Devolver reportes completos
+    res.json(nearbyReports);
 
-    res.json(result);
   } catch (error) {
+
     console.error(error);
 
     res.status(500).json({

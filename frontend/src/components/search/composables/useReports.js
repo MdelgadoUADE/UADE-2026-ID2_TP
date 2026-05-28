@@ -1,7 +1,11 @@
-import { ref, computed } from 'vue'
+import {
+  ref,
+  computed
+} from 'vue'
 
 export function useReports() {
 
+  // MAIN STATE
   const reports = ref([])
 
   const loading = ref(false)
@@ -12,9 +16,21 @@ export function useReports() {
 
   const searchQuery = ref('')
 
+  // NEARBY STATE
+  const nearbyReports = ref([])
+
+  const nearbyLoading = ref(false)
+
+  const showingNearby = ref(false)
+
+  // =========================
+  // FETCH ALL REPORTS
+  // =========================
+
   async function fetchReports() {
 
     loading.value = true
+
     error.value = null
 
     try {
@@ -46,6 +62,86 @@ export function useReports() {
     }
   }
 
+  // =========================
+  // FETCH NEARBY REPORTS
+  // =========================
+
+  async function fetchNearbyReports(reportId) {
+
+    if (!reportId) return
+
+    nearbyLoading.value = true
+
+    error.value = null
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:3000/reports/near/${reportId}`
+      )
+
+      if (!response.ok) {
+
+        throw new Error(
+          'Error obteniendo reportes cercanos'
+        )
+      }
+
+      const data = await response.json()
+
+      console.log(
+        'Nearby reports:',
+        data
+      )
+
+      // EXCLUDE CURRENT REPORT
+      nearbyReports.value = data.filter(
+        report =>
+          String(report._id) !== String(reportId)
+      )
+
+      showingNearby.value = true
+
+      // OPTIONAL:
+      // clear selected report
+      // if no nearby reports found
+
+      if (
+        nearbyReports.value.length === 0
+      ) {
+
+        console.warn(
+          'No se encontraron reportes cercanos'
+        )
+      }
+
+    } catch (err) {
+
+      console.error(err)
+
+      error.value = err.message
+
+    } finally {
+
+      nearbyLoading.value = false
+    }
+  }
+
+  // =========================
+  // CLEAR NEARBY
+  // =========================
+
+  function clearNearbyReports() {
+
+    showingNearby.value = false
+
+    nearbyReports.value = []
+  }
+
+  // =========================
+  // SELECT REPORT
+  // =========================
+
   function selectReport(report) {
 
     selectedReport.value = report
@@ -55,6 +151,10 @@ export function useReports() {
 
     selectedReport.value = null
   }
+
+  // =========================
+  // HELPERS
+  // =========================
 
   function normalizeText(text) {
 
@@ -70,6 +170,10 @@ export function useReports() {
     return JSON.stringify(tags)
       .toLowerCase()
   }
+
+  // =========================
+  // FILTERED REPORTS
+  // =========================
 
   const filteredReports = computed(() => {
 
@@ -88,6 +192,10 @@ export function useReports() {
         report.user?.username
       )
 
+      const surname = normalizeText(
+        report.user?.surname
+      )
+
       const status = normalizeText(
         report.status
       )
@@ -101,19 +209,46 @@ export function useReports() {
       )
 
       return (
+
         username.includes(query) ||
+
+        surname.includes(query) ||
+
         status.includes(query) ||
+
         notes.includes(query) ||
+
         tags.includes(query)
       )
     })
   })
 
+  // =========================
+  // ACTIVE LIST
+  // =========================
+
+  const activeReports = computed(() => {
+
+    return showingNearby.value
+      ? nearbyReports.value
+      : filteredReports.value
+  })
+
+  const activeLoading = computed(() => {
+
+    return showingNearby.value
+      ? nearbyLoading.value
+      : loading.value
+  })
+
+  // =========================
+  // RETURN
+  // =========================
+
   return {
 
+    // MAIN
     reports,
-
-    filteredReports,
 
     loading,
 
@@ -123,10 +258,28 @@ export function useReports() {
 
     searchQuery,
 
+    filteredReports,
+
     fetchReports,
 
     selectReport,
 
-    clearSelectedReport
+    clearSelectedReport,
+
+    // NEARBY
+    nearbyReports,
+
+    nearbyLoading,
+
+    showingNearby,
+
+    fetchNearbyReports,
+
+    clearNearbyReports,
+
+    // ACTIVE
+    activeReports,
+
+    activeLoading
   }
 }
