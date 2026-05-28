@@ -47,4 +47,66 @@ router.get("/reverse-geocode", async (req, res) => {
   }
 });
 
+router.get(
+  "/resolve-address",
+  async (req, res) => {
+
+    const { lat, lng } = req.query;
+
+    try {
+
+      const url =
+        `https://nominatim.openstreetmap.org/reverse` +
+        `?format=jsonv2&lat=${lat}&lon=${lng}`;
+
+      const response = await fetch(url, {
+
+        headers: {
+
+          "User-Agent":
+            "ReportingAppforUniversity/0.1 (contact: mdelgadomoina@uade.edu.ar)",
+
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+
+        return res.status(503).json({
+
+          success: false,
+
+          error:
+            "Geocoding service unavailable",
+        });
+      }
+
+      const data = await response.json();
+
+      return res.json({
+
+        success: true,
+
+        address:
+          data.display_name || "",
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Resolve address failed:",
+        error
+      );
+
+      return res.status(500).json({
+
+        success: false,
+
+        error:
+          "Internal geocoding error",
+      });
+    }
+  }
+);
+
 module.exports = router;

@@ -6,6 +6,23 @@ const Report = require("../models/Report");
 
 router.post("/", async (req, res) => {
   try {
+    // Agregar geocoding para obtener dirección a partir de coordenadas
+    const coordinates = req.body.report_location.coordinates;
+    const lng = coordinates[0];
+    const lat = coordinates[1];
+
+    const geocodeResponse =
+      await fetch(
+        `http://localhost:3000/map/resolve-address?lat=${lat}&lng=${lng}`
+      );
+
+    const geocodeData =await geocodeResponse.json();
+
+    if (geocodeData.success) {
+      req.body.report_location.address = geocodeData.address;
+    }
+
+    // validar que el req tenga la estructura correcta
     const report = new Report(req.body);
 
     const savedReport = await report.save();
@@ -89,7 +106,7 @@ router.get("/near/:id", async (req, res) => {
             coordinates,
           },
 
-          $maxDistance: 50000,
+          $maxDistance: 10000,
         },
       },
     });

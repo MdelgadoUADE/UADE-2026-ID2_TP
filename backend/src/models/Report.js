@@ -32,6 +32,11 @@ const ReportSchema = new mongoose.Schema(
       coordinates: {
         type: [Number],
         required: true
+      },
+
+      address: {
+        type: String,
+        default: ''
       }
     },
 

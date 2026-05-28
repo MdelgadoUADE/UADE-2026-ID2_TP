@@ -147,8 +147,37 @@ const emit = defineEmits([
 
         </div>
 
-        <p class="text-sm text-gray-600">
-          {{ report.report_location.coordinates }}
+        <!-- ADDRESS -->
+        <p
+            class="
+            text-base
+            font-medium
+            text-gray-900
+            leading-relaxed
+            "
+        >
+
+            {{
+            report.report_location?.address ||
+            'Dirección no disponible'
+            }}
+
+        </p>
+
+        <!-- COORDINATES -->
+        <p
+            class="
+            mt-2
+            text-xs
+            text-gray-500
+            font-mono
+            "
+        >
+
+            {{
+            report.report_location?.coordinates?.join(', ')
+            }}
+
         </p>
 
       </div>

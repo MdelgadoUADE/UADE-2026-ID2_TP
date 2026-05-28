@@ -23,10 +23,13 @@ reportitDb.reports.insertMany([
         license_plate: "AF123XY"
       }
     },
+
     report_location: {
       type: "Point",
-      coordinates: [-58.3702, -34.6037]
+      coordinates: [-58.3816, -34.6186],
+      address: "Lima 757, Monserrat, Buenos Aires"
     },
+
     status: "active",
     is_anonymous: false,
     related_reports: [],
@@ -55,10 +58,13 @@ reportitDb.reports.insertMany([
       },
       persona_color_ropa: "gris"
     },
+
     report_location: {
       type: "Point",
-      coordinates: [-58.3699, -34.6034]
+      coordinates: [-58.3824, -34.6191],
+      address: "Av. Independencia 1200, Monserrat, Buenos Aires"
     },
+
     status: "active",
     is_anonymous: true,
     related_reports: [],
@@ -89,7 +95,8 @@ reportitDb.reports.insertMany([
     },
     report_location: {
       type: "Point",
-      coordinates: [-58.3816, -34.6039]
+      coordinates: [-64.1888, -31.4201],
+      address: "Av. Colón 550, Córdoba Capital"
     },
     status: "resolved",
     is_anonymous: false,
@@ -119,7 +126,8 @@ reportitDb.reports.insertMany([
     },
     report_location: {
       type: "Point",
-      coordinates: [-58.3745, -34.6012]
+      coordinates: [-58.3808, -34.6179],
+      address: "Salta 800, Monserrat, Buenos Aires"
     },
     status: "archived",
     is_anonymous: true,
@@ -149,7 +157,8 @@ reportitDb.reports.insertMany([
     },
     report_location: {
       type: "Point",
-      coordinates: [-58.3710, -34.6041]
+      coordinates: [-64.1901, -31.4210],
+      address: "General Paz 320, Córdoba Capital"
     },
     status: "active",
     is_anonymous: false,

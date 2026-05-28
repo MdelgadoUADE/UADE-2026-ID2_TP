@@ -91,7 +91,7 @@ function coordinates(location) {
         <MapPin class="w-4 h-4 text-blue-600" />
 
         <span class="text-sm">
-          {{ coordinates(report.report_location) }}
+          {{ report.report_location?.address || 'Ubicación desconocida' }}
         </span>
 
       </div>
