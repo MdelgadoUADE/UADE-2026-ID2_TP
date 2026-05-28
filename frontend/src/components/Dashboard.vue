@@ -3,7 +3,7 @@
 import { ref } from 'vue'
 
 import ReportView from './ReportView.vue'
-import SearchView from './SearchView.vue'
+import SearchView from './search/SearchView.vue'
 import AppHeader from './AppHeader.vue'
 
 defineProps({
