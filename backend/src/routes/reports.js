@@ -76,36 +76,101 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+/**
+ * Búsqueda avanzada combinada por ubicación y tags (RF_13)
+ * GET /reports/search?lat=X&lng=Y&radius=1000&tags=tag1,tag2&status=active
+ */
+router.get("/search", async (req, res) => {
   try {
-    const report = await Report.findById(req.params.id);
+    const {
+      lat,
+      lng,
+      radius = 1000, // Radio en metros (default 1km)
+      tags,
+      status,
+      minTrustScore,
+      validity,
+      criticality
+    } = req.query;
 
-    if (!report) {
-      return res.status(404).json({
-        message: "Report not found",
+    // Validar parámetros requeridos
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: "lat and lng are required"
       });
     }
 
-    res.json(report);
-  } catch (error) {
-    console.error(error);
+    // Validar radio (min 100m, max 10km)
+    const radiusNum = parseInt(radius);
+    if (radiusNum < 100 || radiusNum > 10000) {
+      return res.status(400).json({
+        success: false,
+        message: "radius must be between 100 and 10000 meters"
+      });
+    }
 
-    res.status(500).json({
-      message: "Error fetching report",
+    // Construir query base con búsqueda geoespacial
+    const query = {
+      report_location: {
+        $geoWithin: {
+          $centerSphere: [
+            [parseFloat(lng), parseFloat(lat)],
+            radiusNum / 6378100 // Convertir metros a radianes
+          ]
+        }
+      }
+    };
+
+    // Filtrar por status
+    if (status) {
+      query.status = status;
+    }
+
+    // Filtrar por tags
+    if (tags) {
+      const tagArray = tags.split(',').map(t => t.trim());
+      // Buscar reportes que tengan al menos uno de los tags
+      const tagConditions = tagArray.map(tag => ({
+        [`tags.${tag}`]: { $exists: true }
+      }));
+      query.$or = tagConditions;
+    }
+
+    // Filtrar por trust score mínimo
+    if (minTrustScore) {
+      query.trust_score = { $gte: parseFloat(minTrustScore) };
+    }
+
+    // Filtrar por validity
+    if (validity) {
+      query.validity = validity;
+    }
+
+    // Filtrar por criticality
+    if (criticality) {
+      query.criticality = criticality;
+    }
+
+    // Ejecutar búsqueda
+    const reports = await Report.find(query)
+      .sort({ timestamp: -1 })
+      .limit(100); // Limitar resultados
+
+    res.json({
+      success: true,
+      count: reports.length,
+      radius: radiusNum,
+      center: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      reports
     });
-  }
-});
 
-router.get("/", async (req, res) => {
-  try {
-    const reports = await Report.find();
-
-    res.json(reports);
   } catch (error) {
-    console.error(error);
-
+    console.error('Error in search:', error);
     res.status(500).json({
-      message: "Error fetching reports",
+      success: false,
+      message: "Error searching reports",
+      error: error.message
     });
   }
 });
@@ -159,11 +224,27 @@ router.get("/near/:id", async (req, res) => {
   }
 });
 
-/**
- * Búsqueda avanzada combinada por ubicación y tags (RF_13)
- * GET /reports/search?lat=X&lng=Y&radius=1000&tags=tag1,tag2&status=active
- */
-router.get("/search", async (req, res) => {
+router.get("/:id", async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({
+        message: "Report not found",
+      });
+    }
+
+    res.json(report);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Error fetching report",
+    });
+  }
+});
+
+router.get("/", async (req, res) => {
   try {
     const {
       lat,

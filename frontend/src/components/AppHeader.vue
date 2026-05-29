@@ -16,11 +16,6 @@ const emit = defineEmits([
   'exit-emergency'
 ])
 
-// Check if user has access to analytics (admin or analyst)
-const hasAnalyticsAccess = () => {
-  return props.userRole === 'admin' || props.userRole === 'analyst'
-}
-
 </script>
 
 <template>
@@ -76,7 +71,7 @@ const hasAnalyticsAccess = () => {
         </button>
 
         <button
-          v-if="!isEmergency && hasAnalyticsAccess()"
+          v-if="!isEmergency"
           @click="emit('change-tab', 'analytics')"
           class="px-4 py-2 rounded-lg transition"
           :class="activeTab === 'analytics'

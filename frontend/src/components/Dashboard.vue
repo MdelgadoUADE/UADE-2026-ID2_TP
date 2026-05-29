@@ -30,14 +30,6 @@ function changeTab(tab) {
     return
   }
   
-  // Verificar acceso a analytics (solo admin y analyst)
-  if (tab === 'analytics') {
-    const userRole = currentUser.value?.role
-    if (userRole !== 'admin' && userRole !== 'analyst') {
-      return
-    }
-  }
-  
   activeTab.value = tab
 }
 

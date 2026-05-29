@@ -254,9 +254,11 @@ async function recalculateClusters() {
     // Limpiar clusters existentes
     await Report.updateMany(
       {},
-      { 
-        $set: { cluster_id: null },
-        $set: { related_reports: [] }
+      {
+        $set: {
+          cluster_id: null,
+          related_reports: []
+        }
       }
     );
 

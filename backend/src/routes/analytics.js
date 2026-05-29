@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
-const { requireRole } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
 const { clusterReports, findClusterCandidates, recalculateClusters } = require('../utils/clustering');
 
 /**
- * Todas las rutas de analytics requieren rol de admin o analyst
+ * Todas las rutas de analytics requieren autenticación
  */
 
 /**
  * GET /analytics/stats
  * Obtener estadísticas generales del sistema
  */
-router.get('/stats', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/stats', requireAuth, async (req, res) => {
   try {
     const stats = await Report.aggregate([
       {
@@ -124,7 +124,7 @@ router.get('/stats', requireRole(['admin', 'analyst']), async (req, res) => {
  * GET /analytics/reports/pending
  * Obtener reportes pendientes de validación
  */
-router.get('/reports/pending', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/reports/pending', requireAuth, async (req, res) => {
   try {
     const { limit = 50, skip = 0 } = req.query;
 
@@ -157,7 +157,7 @@ router.get('/reports/pending', requireRole(['admin', 'analyst']), async (req, re
  * PUT /analytics/reports/:id/validate
  * Validar o rechazar un reporte
  */
-router.put('/reports/:id/validate', requireRole(['admin', 'analyst']), async (req, res) => {
+router.put('/reports/:id/validate', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { validity, criticality, analyst_notes } = req.body;
@@ -228,7 +228,7 @@ router.put('/reports/:id/validate', requireRole(['admin', 'analyst']), async (re
  * GET /analytics/reports/clusters
  * Obtener reportes agrupados por clusters
  */
-router.get('/reports/clusters', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/reports/clusters', requireAuth, async (req, res) => {
   try {
     const clusters = await Report.aggregate([
       {
@@ -273,7 +273,7 @@ router.get('/reports/clusters', requireRole(['admin', 'analyst']), async (req, r
  * GET /analytics/heatmap
  * Obtener datos para mapa de calor
  */
-router.get('/heatmap', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/heatmap', requireAuth, async (req, res) => {
   try {
     const { status = 'active' } = req.query;
 
@@ -316,7 +316,7 @@ router.get('/heatmap', requireRole(['admin', 'analyst']), async (req, res) => {
  * GET /analytics/trends
  * Obtener tendencias temporales
  */
-router.get('/trends', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/trends', requireAuth, async (req, res) => {
   try {
     const { days = 7 } = req.query;
     const startDate = new Date();
@@ -363,7 +363,7 @@ router.get('/trends', requireRole(['admin', 'analyst']), async (req, res) => {
  * POST /analytics/cluster/run
  * Ejecutar clustering de reportes
  */
-router.post('/cluster/run', requireRole(['admin', 'analyst']), async (req, res) => {
+router.post('/cluster/run', requireAuth, async (req, res) => {
   try {
     const { maxDistance, timeWindowHours, minTrustScore } = req.body;
 
@@ -389,7 +389,7 @@ router.post('/cluster/run', requireRole(['admin', 'analyst']), async (req, res) 
  * POST /analytics/cluster/recalculate
  * Recalcular todos los clusters
  */
-router.post('/cluster/recalculate', requireRole(['admin', 'analyst']), async (req, res) => {
+router.post('/cluster/recalculate', requireAuth, async (req, res) => {
   try {
     const result = await recalculateClusters();
     res.json(result);
@@ -408,7 +408,7 @@ router.post('/cluster/recalculate', requireRole(['admin', 'analyst']), async (re
  * GET /analytics/cluster/candidates/:id
  * Obtener candidatos para clustering de un reporte específico
  */
-router.get('/cluster/candidates/:id', requireRole(['admin', 'analyst']), async (req, res) => {
+router.get('/cluster/candidates/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { maxDistance, timeWindowHours, minTrustScore } = req.query;
