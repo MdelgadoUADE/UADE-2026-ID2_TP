@@ -52,7 +52,7 @@ function changeTab(tab) {
     <AppHeader
       :username="username"
       :activeTab="activeTab"
-      :user-role="currentUser?.role"
+      :user-role="currentUser?.value?.role"
       :is-emergency="isEmergency"
       @logout="emit('logout')"
       @exit-emergency="emit('exit-emergency')"
