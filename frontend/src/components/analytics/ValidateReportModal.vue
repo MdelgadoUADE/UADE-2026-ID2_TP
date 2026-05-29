@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { X, CheckCircle, XCircle, AlertTriangle, Copy } from 'lucide-vue-next'
+import NotificationModal from '../NotificationModal.vue'
 
 const props = defineProps({
   report: {
@@ -38,9 +39,11 @@ const statusOptions = [
   { value: 'rejected', label: 'Rechazado' }
 ]
 
+const showValidationError = ref(false)
+
 function handleSubmit() {
   if (!formData.value.analyst_notes.trim()) {
-    alert('Por favor ingrese notas del analista')
+    showValidationError.value = true
     return
   }
 
@@ -247,6 +250,16 @@ function handleClose() {
       </form>
 
     </div>
+
+    <!-- Validation Error Notification -->
+    <NotificationModal
+      :show="showValidationError"
+      type="warning"
+      title="Campo Requerido"
+      message="Por favor ingrese notas del analista antes de guardar la validación."
+      @confirm="showValidationError = false"
+      @close="showValidationError = false"
+    />
   </div>
 </template>
 

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { Clock, MapPin, Tag, User, Star, AlertTriangle, CheckCircle, XCircle, Copy } from 'lucide-vue-next'
 import ValidateReportModal from './ValidateReportModal.vue'
+import NotificationModal from '../NotificationModal.vue'
 
 const props = defineProps({
   user: {
@@ -17,6 +18,27 @@ const loading = ref(false)
 const error = ref(null)
 const selectedReport = ref(null)
 const showValidateModal = ref(false)
+
+// Notification modal state
+const notification = ref({
+  show: false,
+  type: 'info',
+  title: '',
+  message: ''
+})
+
+function showNotification(type, title, message) {
+  notification.value = {
+    show: true,
+    type,
+    title,
+    message
+  }
+}
+
+function closeNotification() {
+  notification.value.show = false
+}
 
 const criticalityColors = {
   low: 'bg-blue-100 text-blue-800',
@@ -94,10 +116,10 @@ async function handleValidation(validationData) {
     // Close modal
     closeValidateModal()
     
-    alert('Reporte validado exitosamente')
+    showNotification('success', 'Validación Exitosa', 'El reporte ha sido validado correctamente.')
   } catch (err) {
     console.error('Error validating report:', err)
-    alert('Error al validar reporte: ' + err.message)
+    showNotification('error', 'Error de Validación', 'Error al validar reporte: ' + err.message)
   }
 }
 
@@ -249,6 +271,16 @@ onMounted(() => {
       :report="selectedReport"
       @close="closeValidateModal"
       @validate="handleValidation"
+    />
+
+    <!-- Notification Modal -->
+    <NotificationModal
+      :show="notification.show"
+      :type="notification.type"
+      :title="notification.title"
+      :message="notification.message"
+      @confirm="closeNotification"
+      @close="closeNotification"
     />
   </div>
 </template>

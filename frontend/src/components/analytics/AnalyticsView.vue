@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { BarChart3, Users, AlertTriangle, CheckCircle, TrendingUp, RefreshCw } from 'lucide-vue-next'
+import { BarChart3, Users, AlertTriangle, TrendingUp, RefreshCw } from 'lucide-vue-next'
 import StatsCards from './StatsCards.vue'
 import PendingReports from './PendingReports.vue'
 import ClustersView from './ClustersView.vue'
+import NotificationModal from '../NotificationModal.vue'
 
 const props = defineProps({
   user: {
@@ -16,6 +17,38 @@ const activeSection = ref('stats')
 const stats = ref(null)
 const loading = ref(false)
 const error = ref(null)
+
+// Notification modal state
+const notification = ref({
+  show: false,
+  type: 'info',
+  title: '',
+  message: '',
+  showCancel: false,
+  onConfirm: null
+})
+
+function showNotification(type, title, message, showCancel = false, onConfirm = null) {
+  notification.value = {
+    show: true,
+    type,
+    title,
+    message,
+    showCancel,
+    onConfirm
+  }
+}
+
+function closeNotification() {
+  notification.value.show = false
+}
+
+function handleNotificationConfirm() {
+  if (notification.value.onConfirm) {
+    notification.value.onConfirm()
+  }
+  closeNotification()
+}
 
 async function fetchStats() {
   loading.value = true
@@ -45,11 +78,17 @@ async function fetchStats() {
   }
 }
 
-async function runClustering() {
-  if (!confirm('¿Ejecutar clustering automático? Esto puede tomar unos segundos.')) {
-    return
-  }
+function confirmClustering() {
+  showNotification(
+    'warning',
+    'Ejecutar Clustering',
+    '¿Ejecutar clustering automático? Esto puede tomar unos segundos.',
+    true,
+    runClustering
+  )
+}
 
+async function runClustering() {
   loading.value = true
   
   try {
@@ -66,7 +105,11 @@ async function runClustering() {
     const data = await response.json()
 
     if (data.success) {
-      alert(`Clustering completado!\n\nClusters creados: ${data.clustersCreated}\nReportes procesados: ${data.reportsProcessed}`)
+      showNotification(
+        'success',
+        'Clustering Completado',
+        `Clusters creados: ${data.clustersCreated}\nReportes procesados: ${data.reportsProcessed}`
+      )
       // Refrescar stats
       await fetchStats()
     } else {
@@ -74,7 +117,11 @@ async function runClustering() {
     }
   } catch (err) {
     console.error('Error running clustering:', err)
-    alert('Error ejecutando clustering: ' + err.message)
+    showNotification(
+      'error',
+      'Error en Clustering',
+      'Error ejecutando clustering: ' + err.message
+    )
   } finally {
     loading.value = false
   }
@@ -106,7 +153,7 @@ onMounted(() => {
         </button>
         
         <button
-          @click="runClustering"
+          @click="confirmClustering"
           :disabled="loading"
           class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
         >
@@ -124,6 +171,18 @@ onMounted(() => {
       <p class="font-semibold">Error</p>
       <p class="text-sm">{{ error }}</p>
     </div>
+
+    <!-- Notification Modal -->
+    <NotificationModal
+      :show="notification.show"
+      :type="notification.type"
+      :title="notification.title"
+      :message="notification.message"
+      :show-cancel="notification.showCancel"
+      @confirm="handleNotificationConfirm"
+      @cancel="closeNotification"
+      @close="closeNotification"
+    />
 
     <!-- Navigation Tabs -->
     <div class="border-b border-gray-200">
