@@ -8,6 +8,7 @@ const reportsRoutes = require("./routes/reports");
 const reportTags = require("./routes/tags");
 const mapFunctions = require("./utils/mapFunctions");
 const authRoutes = require("./routes/auth");
+const analyticsRoutes = require("./routes/analytics");
 
 const app = express();
 
@@ -17,7 +18,8 @@ app.use(express.json());
 app.use("/reports", reportsRoutes);
 app.use("/map", mapFunctions);
 app.use("/tags", reportTags);
-app.use("/auth", authRoutes); 
+app.use("/auth", authRoutes);
+app.use("/analytics", analyticsRoutes);
 
 const PORT = 3000;
 

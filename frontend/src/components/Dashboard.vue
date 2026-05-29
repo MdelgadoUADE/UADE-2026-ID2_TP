@@ -5,19 +5,28 @@ import { ref } from 'vue'
 import ReportView from './ReportView.vue'
 import SearchView from './search/SearchView.vue'
 import AppHeader from './AppHeader.vue'
+import { AlertTriangle } from 'lucide-vue-next'
 
-defineProps({
-  username: String
+const props = defineProps({
+  username: String,
+  isEmergency: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits([
-  'logout'
+  'logout',
+  'exit-emergency'
 ])
 
 const activeTab = ref('reportar')
 
 function changeTab(tab) {
-
+  // En modo emergencia, solo permitir la pestaña de reportar
+  if (props.isEmergency && tab !== 'reportar') {
+    return
+  }
   activeTab.value = tab
 }
 
@@ -32,9 +41,31 @@ function changeTab(tab) {
     <AppHeader
       :username="username"
       :activeTab="activeTab"
+      :is-emergency="isEmergency"
       @logout="emit('logout')"
+      @exit-emergency="emit('exit-emergency')"
       @change-tab="changeTab"
     />
+
+    <!-- Emergency Mode Banner -->
+    <div
+      v-if="isEmergency"
+      class="bg-red-600 text-white px-6 py-3 flex items-center justify-between"
+    >
+      <div class="flex items-center gap-3">
+        <AlertTriangle class="w-5 h-5" />
+        <div>
+          <p class="font-semibold">Modo Emergencia Activo</p>
+          <p class="text-sm text-red-100">Solo puedes crear reportes. Inicia sesión para acceder a todas las funciones.</p>
+        </div>
+      </div>
+      <button
+        @click="emit('exit-emergency')"
+        class="bg-white text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 font-medium transition-colors"
+      >
+        Iniciar Sesión
+      </button>
+    </div>
 
     <main
       class="p-6"
@@ -45,7 +76,7 @@ function changeTab(tab) {
       />
 
       <SearchView
-        v-if="activeTab === 'buscar'"
+        v-if="activeTab === 'buscar' && !isEmergency"
       />
 
     </main>

@@ -8,7 +8,7 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 
-const emit = defineEmits(['login-success', 'go-to-register'])
+const emit = defineEmits(['login-success', 'go-to-register', 'emergency-mode'])
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -40,8 +40,7 @@ async function login(emailValue, passwordValue) {
 
 
 function enterEmergencyMode() {
-
-  alert('Modo emergencia')
+  emit('emergency-mode')
 }
 
 async function handleSubmit(e) {
