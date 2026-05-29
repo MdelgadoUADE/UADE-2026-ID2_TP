@@ -14,6 +14,8 @@ const props = defineProps({
 const emit = defineEmits(["close"]);
 
 const currentUser = inject('currentUser')
+const isEmergencyMode = inject('isEmergencyMode') // Esto deberia servir para usarlo al bloqueal multimedia en emergencia
+
 
 // Tags
 const allTags = ref([])
@@ -365,6 +367,18 @@ async function handleSubmit() {
           {{ isSubmitting ? "Enviando..." : "Enviar Reporte" }}
         </button>
       </div>
+      
+      <!-- ATTACHMENTS (no implementados)--> 
+      <div>
+        <section v-if="!isEmergencyMode" class="border rounded-xl p-4">
+          <!-- upload de archivos -->
+        </section>
+        <div v-else class="border border-red-200 bg-red-50 rounded-xl p-4 text-sm text-red-500 flex items-center gap-2">
+          <AlertTriangle class="w-4 h-4" />
+          Los adjuntos no están disponibles en modo emergencia.
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
