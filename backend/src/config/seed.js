@@ -17,6 +17,13 @@ const seedUsers = [
     email:    'testadmin@reportit.com',
     password: 'admin1234',
     role:     'admin'
+  },
+  {
+    username: 'testAnalyst',
+    surname:  'Analyst',
+    email:    'testanalyst@reportit.com',
+    password: 'analyst1234',
+    role:     'analyst'
   }
 ]
 

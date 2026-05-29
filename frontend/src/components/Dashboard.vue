@@ -1,9 +1,10 @@
 <script setup>
 
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 
 import ReportView from './ReportView.vue'
 import SearchView from './search/SearchView.vue'
+import AnalyticsView from './analytics/AnalyticsView.vue'
 import AppHeader from './AppHeader.vue'
 import { AlertTriangle } from 'lucide-vue-next'
 
@@ -21,12 +22,22 @@ const emit = defineEmits([
 ])
 
 const activeTab = ref('reportar')
+const currentUser = inject('currentUser')
 
 function changeTab(tab) {
   // En modo emergencia, solo permitir la pestaña de reportar
   if (props.isEmergency && tab !== 'reportar') {
     return
   }
+  
+  // Verificar acceso a analytics (solo admin y analyst)
+  if (tab === 'analytics') {
+    const userRole = currentUser.value?.role
+    if (userRole !== 'admin' && userRole !== 'analyst') {
+      return
+    }
+  }
+  
   activeTab.value = tab
 }
 
@@ -41,6 +52,7 @@ function changeTab(tab) {
     <AppHeader
       :username="username"
       :activeTab="activeTab"
+      :user-role="currentUser?.role"
       :is-emergency="isEmergency"
       @logout="emit('logout')"
       @exit-emergency="emit('exit-emergency')"
@@ -77,6 +89,11 @@ function changeTab(tab) {
 
       <SearchView
         v-if="activeTab === 'buscar' && !isEmergency"
+      />
+
+      <AnalyticsView
+        v-if="activeTab === 'analytics' && !isEmergency && currentUser"
+        :user="currentUser"
       />
 
     </main>

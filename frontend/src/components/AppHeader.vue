@@ -3,6 +3,7 @@
 const props = defineProps({
   username: String,
   activeTab: String,
+  userRole: String,
   isEmergency: {
     type: Boolean,
     default: false
@@ -14,6 +15,11 @@ const emit = defineEmits([
   'change-tab',
   'exit-emergency'
 ])
+
+// Check if user has access to analytics (admin or analyst)
+const hasAnalyticsAccess = () => {
+  return props.userRole === 'admin' || props.userRole === 'analyst'
+}
 
 </script>
 
@@ -67,6 +73,17 @@ const emit = defineEmits([
           title="Inicia sesión para acceder a búsqueda"
         >
           Buscar 🔒
+        </button>
+
+        <button
+          v-if="!isEmergency && hasAnalyticsAccess()"
+          @click="emit('change-tab', 'analytics')"
+          class="px-4 py-2 rounded-lg transition"
+          :class="activeTab === 'analytics'
+            ? 'bg-blue-600'
+            : 'bg-gray-700 hover:bg-gray-600'"
+        >
+          Analytics
         </button>
 
       </nav>
