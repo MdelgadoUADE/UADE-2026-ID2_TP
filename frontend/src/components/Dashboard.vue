@@ -92,8 +92,8 @@ function changeTab(tab) {
       />
 
       <AnalyticsView
-        v-if="activeTab === 'analytics' && !isEmergency && currentUser"
-        :user="currentUser"
+        v-if="activeTab === 'analytics' && !isEmergency && currentUser?.value"
+        :user="currentUser.value"
       />
 
     </main>
