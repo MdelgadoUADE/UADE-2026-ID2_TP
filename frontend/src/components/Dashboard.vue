@@ -1,6 +1,6 @@
 <script setup>
 
-import { ref, inject } from 'vue'
+import { ref, inject, computed } from 'vue'
 
 import ReportView from './ReportView.vue'
 import SearchView from './search/SearchView.vue'
@@ -22,7 +22,8 @@ const emit = defineEmits([
 ])
 
 const activeTab = ref('reportar')
-const currentUser = inject('currentUser')
+const currentUserRef = inject('currentUser')
+const currentUser = computed(() => currentUserRef.value)
 
 function changeTab(tab) {
   // En modo emergencia, solo permitir la pestaña de reportar
@@ -44,7 +45,7 @@ function changeTab(tab) {
     <AppHeader
       :username="username"
       :activeTab="activeTab"
-      :user-role="currentUser?.value?.role"
+      :user-role="currentUser.role"
       :is-emergency="isEmergency"
       @logout="emit('logout')"
       @exit-emergency="emit('exit-emergency')"
@@ -84,8 +85,8 @@ function changeTab(tab) {
       />
 
       <AnalyticsView
-        v-if="activeTab === 'analytics' && !isEmergency && currentUser?.value"
-        :user="currentUser.value"
+        v-if="activeTab === 'analytics' && !isEmergency && currentUser.user_id"
+        :user="currentUser"
       />
 
     </main>
