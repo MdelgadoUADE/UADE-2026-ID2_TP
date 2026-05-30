@@ -45,7 +45,7 @@ function changeTab(tab) {
     <AppHeader
       :username="username"
       :activeTab="activeTab"
-      :user-role="currentUser.role"
+      :user-role="currentUser?.role"
       :is-emergency="isEmergency"
       @logout="emit('logout')"
       @exit-emergency="emit('exit-emergency')"
@@ -85,7 +85,7 @@ function changeTab(tab) {
       />
 
       <AnalyticsView
-        v-if="activeTab === 'analytics' && !isEmergency && currentUser.user_id"
+        v-if="activeTab === 'analytics' && !isEmergency && currentUser?.user_id"
         :user="currentUser"
       />
 
