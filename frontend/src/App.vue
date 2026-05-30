@@ -45,7 +45,7 @@ function logout() {
   <!-- MODO EMERGENCIA -->
   <Dashboard
     v-if="isEmergencyMode"
-    :username="null"
+    :current-user="null"
     :emergency-mode="true"
     @logout="onExitEmergency"
   />
@@ -67,7 +67,7 @@ function logout() {
 
   <Dashboard
     v-else
-    :username="currentUser.username"
+    :current-user="currentUser"
     :emergency-mode="false"
     @logout="logout"
   />
