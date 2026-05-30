@@ -16,6 +16,9 @@ export function useReports() {
 
   const searchQuery = ref('')
 
+  const originReport = ref(null)
+
+
   // NEARBY STATE
   const nearbyReports = ref([])
 
@@ -69,6 +72,8 @@ export function useReports() {
   async function fetchNearbyReports(reportId) {
 
     if (!reportId) return
+
+    originReport.value = selectedReport.value
 
     nearbyLoading.value = true
 
@@ -136,6 +141,8 @@ export function useReports() {
     showingNearby.value = false
 
     nearbyReports.value = []
+
+    originReport.value = null
   }
 
   // =========================
@@ -265,6 +272,8 @@ const activeLoading = computed(() => {
     fetchReports,
 
     selectReport,
+
+    originReport,
 
     clearSelectedReport,
 
