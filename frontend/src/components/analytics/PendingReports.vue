@@ -140,6 +140,19 @@ function getTrustScoreColor(score) {
   return 'text-red-600'
 }
 
+function getReportLocation(report) {
+  return report?.report_location || {}
+}
+
+function getReportCoordinates(report) {
+  return report?.report_location?.coordinates || []
+}
+
+function getReportTags(report) {
+  if (!report?.tags) return []
+  return Array.isArray(report.tags) ? report.tags : Object.keys(report.tags)
+}
+
 onMounted(() => {
   fetchPendingReports()
 })
@@ -211,26 +224,26 @@ onMounted(() => {
               
               <div class="flex items-center gap-1">
                 <MapPin class="w-4 h-4" />
-                {{ report.location.address || 'Sin dirección' }}
+                {{ getReportLocation(report).address || 'Sin dirección' }}
               </div>
 
               <div class="flex items-center gap-1">
                 <User class="w-4 h-4" />
-                {{ report.user.username }}
+                {{ report.user?.username || 'Usuario desconocido' }}
               </div>
 
               <div class="flex items-center gap-1">
                 <Star class="w-4 h-4" />
                 <span :class="getTrustScoreColor(report.trust_score)">
-                  {{ report.trust_score.toFixed(2) }}
+                  {{ Number(report.trust_score || 0).toFixed(2) }}
                 </span>
               </div>
             </div>
 
             <!-- Tags -->
-            <div v-if="report.tags && report.tags.length > 0" class="flex flex-wrap gap-2 mt-3">
+            <div v-if="getReportTags(report).length > 0" class="flex flex-wrap gap-2 mt-3">
               <span
-                v-for="tag in report.tags"
+                v-for="tag in getReportTags(report)"
                 :key="tag"
                 class="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
               >
@@ -260,7 +273,13 @@ onMounted(() => {
 
         <!-- Coordinates -->
         <div class="text-xs text-gray-500 mt-2">
-          Coordenadas: {{ report.location.coordinates[1].toFixed(6) }}, {{ report.location.coordinates[0].toFixed(6) }}
+          Coordenadas:
+          <span v-if="getReportCoordinates(report).length >= 2">
+            {{ getReportCoordinates(report)[1].toFixed(6) }}, {{ getReportCoordinates(report)[0].toFixed(6) }}
+          </span>
+          <span v-else>
+            Sin coordenadas
+          </span>
         </div>
       </div>
     </div>

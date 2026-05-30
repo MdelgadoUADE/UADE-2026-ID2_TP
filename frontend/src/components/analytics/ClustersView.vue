@@ -92,11 +92,31 @@ function getClusterSeverityLabel(severity) {
   return labels[severity] || 'Desconocido'
 }
 
+function getReportLocation(report) {
+  return report?.report_location || {}
+}
+
+function getReportCoordinates(report) {
+  return report?.report_location?.coordinates || []
+}
+
+function getReportTags(report) {
+  if (!report?.tags) return []
+  return Array.isArray(report.tags) ? report.tags : Object.keys(report.tags)
+}
+
+function getClusterId(cluster) {
+  return cluster?.cluster_id || cluster?._id
+}
+
 function getAverageLocation(cluster) {
   if (!cluster.reports || cluster.reports.length === 0) return null
+
+  const reportsWithCoordinates = cluster.reports.filter(report => getReportCoordinates(report).length >= 2)
+  if (reportsWithCoordinates.length === 0) return null
   
-  const avgLat = cluster.reports.reduce((sum, r) => sum + r.location.coordinates[1], 0) / cluster.reports.length
-  const avgLng = cluster.reports.reduce((sum, r) => sum + r.location.coordinates[0], 0) / cluster.reports.length
+  const avgLat = reportsWithCoordinates.reduce((sum, r) => sum + getReportCoordinates(r)[1], 0) / reportsWithCoordinates.length
+  const avgLng = reportsWithCoordinates.reduce((sum, r) => sum + getReportCoordinates(r)[0], 0) / reportsWithCoordinates.length
   
   return { lat: avgLat.toFixed(6), lng: avgLng.toFixed(6) }
 }
@@ -145,19 +165,19 @@ onMounted(() => {
     <div v-else class="space-y-4">
       <div
         v-for="cluster in clusters"
-        :key="cluster.cluster_id"
+        :key="getClusterId(cluster)"
         class="bg-white rounded-lg border shadow-sm overflow-hidden"
       >
         <!-- Cluster Header -->
         <div
-          @click="toggleCluster(cluster.cluster_id)"
+          @click="toggleCluster(getClusterId(cluster))"
           class="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
         >
           <div class="flex items-start justify-between">
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-2">
                 <h3 class="text-lg font-semibold text-gray-900">
-                  Cluster #{{ cluster.cluster_id }}
+                  Cluster #{{ getClusterId(cluster) }}
                 </h3>
                 <span
                   :class="[
@@ -175,7 +195,7 @@ onMounted(() => {
               <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
                 <div class="flex items-center gap-1">
                   <MapPin class="w-4 h-4" />
-                  {{ cluster.reports[0]?.location.address || 'Sin dirección' }}
+                  {{ getReportLocation(cluster.reports[0]).address || 'Sin dirección' }}
                 </div>
                 
                 <div class="flex items-center gap-1">
@@ -203,7 +223,7 @@ onMounted(() => {
             </div>
 
             <button class="text-gray-400 hover:text-gray-600 transition-colors ml-4">
-              <ChevronDown v-if="!isExpanded(cluster.cluster_id)" class="w-5 h-5" />
+              <ChevronDown v-if="!isExpanded(getClusterId(cluster))" class="w-5 h-5" />
               <ChevronUp v-else class="w-5 h-5" />
             </button>
           </div>
@@ -211,7 +231,7 @@ onMounted(() => {
 
         <!-- Cluster Reports (Expanded) -->
         <div
-          v-if="isExpanded(cluster.cluster_id)"
+          v-if="isExpanded(getClusterId(cluster))"
           class="border-t bg-gray-50"
         >
           <div class="p-6 space-y-4">
@@ -238,16 +258,16 @@ onMounted(() => {
                   <p class="text-sm text-gray-600 mb-2">{{ report.description }}</p>
                   
                   <div class="flex flex-wrap gap-3 text-xs text-gray-500">
-                    <span>Usuario: {{ report.user.username }}</span>
-                    <span>Score: {{ report.trust_score.toFixed(2) }}</span>
+                    <span>Usuario: {{ report.user?.username || 'Usuario desconocido' }}</span>
+                    <span>Score: {{ Number(report.trust_score || 0).toFixed(2) }}</span>
                     <span>Estado: {{ report.status }}</span>
                     <span>{{ formatDate(report.timestamp) }}</span>
                   </div>
 
                   <!-- Report Tags -->
-                  <div v-if="report.tags && report.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
+                  <div v-if="getReportTags(report).length > 0" class="flex flex-wrap gap-1 mt-2">
                     <span
-                      v-for="tag in report.tags"
+                      v-for="tag in getReportTags(report)"
                       :key="tag"
                       class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs"
                     >
@@ -258,7 +278,12 @@ onMounted(() => {
               </div>
 
               <div class="text-xs text-gray-400 mt-2">
-                {{ report.location.coordinates[1].toFixed(6) }}, {{ report.location.coordinates[0].toFixed(6) }}
+                <span v-if="getReportCoordinates(report).length >= 2">
+                  {{ getReportCoordinates(report)[1].toFixed(6) }}, {{ getReportCoordinates(report)[0].toFixed(6) }}
+                </span>
+                <span v-else>
+                  Sin coordenadas
+                </span>
               </div>
             </div>
           </div>

@@ -242,10 +242,18 @@ onMounted(() => {
 
     <div v-else>
       <StatsCards
-        v-if="activeSection === 'stats'"
+        v-if="activeSection === 'stats' && stats"
         :stats="stats"
         :user="user"
       />
+
+      <div
+        v-else-if="activeSection === 'stats'"
+        class="text-center py-12 bg-gray-50 rounded-lg border border-gray-200"
+      >
+        <p class="text-gray-900 font-semibold">No se pudieron cargar las estadísticas</p>
+        <p class="text-gray-600 text-sm mt-1">Intentá actualizar para reintentar la carga</p>
+      </div>
 
       <PendingReports
         v-if="activeSection === 'pending'"
