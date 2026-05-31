@@ -7,6 +7,8 @@ El proyecto utiliza Docker para garantizar un entorno reproducible y evitar prob
 # ⌨️​ Test Credentials
 - email: testuser@reportit.com
 - password: test1234
+- email: testadmin@reportit.com
+- password: admin1234
 
 # 🚀 Technologies
 
