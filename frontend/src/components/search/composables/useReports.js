@@ -16,6 +16,9 @@ export function useReports() {
 
   const searchQuery = ref('')
 
+  const originReport = ref(null)
+
+
   // NEARBY STATE
   const nearbyReports = ref([])
 
@@ -69,6 +72,8 @@ export function useReports() {
   async function fetchNearbyReports(reportId) {
 
     if (!reportId) return
+
+    originReport.value = selectedReport.value
 
     nearbyLoading.value = true
 
@@ -136,6 +141,8 @@ export function useReports() {
     showingNearby.value = false
 
     nearbyReports.value = []
+
+    originReport.value = null
   }
 
   // =========================
@@ -172,74 +179,78 @@ export function useReports() {
   }
 
   // =========================
-  // FILTERED REPORTS
-  // =========================
+// FILTER HELPERS
+// =========================
 
-  const filteredReports = computed(() => {
+function reportMatchesSearch(report, query) {
 
-    if (!searchQuery.value) {
+  const username = normalizeText(
+    report.user?.username
+  )
 
-      return reports.value
-    }
+  const surname = normalizeText(
+    report.user?.surname
+  )
 
-    const query = normalizeText(
-      searchQuery.value
+  const status = normalizeText(
+    report.status
+  )
+
+  const notes = normalizeText(
+    report.notes
+  )
+
+  const tags = tagsToText(
+    report.tags
+  )
+
+  return (
+
+    username.includes(query) ||
+
+    surname.includes(query) ||
+
+    status.includes(query) ||
+
+    notes.includes(query) ||
+
+    tags.includes(query)
+  )
+}
+
+// =========================
+// ACTIVE LIST
+// =========================
+
+const activeReports = computed(() => {
+
+  const source = showingNearby.value
+    ? nearbyReports.value
+    : reports.value
+
+  if (!searchQuery.value) {
+
+    return source
+  }
+
+  const query = normalizeText(
+    searchQuery.value
+  )
+
+  return source.filter(report =>
+    reportMatchesSearch(
+      report,
+      query
     )
+  )
+})
 
-    return reports.value.filter(report => {
+const activeLoading = computed(() => {
 
-      const username = normalizeText(
-        report.user?.username
-      )
-
-      const surname = normalizeText(
-        report.user?.surname
-      )
-
-      const status = normalizeText(
-        report.status
-      )
-
-      const notes = normalizeText(
-        report.notes
-      )
-
-      const tags = tagsToText(
-        report.tags
-      )
-
-      return (
-
-        username.includes(query) ||
-
-        surname.includes(query) ||
-
-        status.includes(query) ||
-
-        notes.includes(query) ||
-
-        tags.includes(query)
-      )
-    })
-  })
-
-  // =========================
-  // ACTIVE LIST
-  // =========================
-
-  const activeReports = computed(() => {
-
-    return showingNearby.value
-      ? nearbyReports.value
-      : filteredReports.value
-  })
-
-  const activeLoading = computed(() => {
-
-    return showingNearby.value
-      ? nearbyLoading.value
-      : loading.value
-  })
+  return showingNearby.value
+    ? nearbyLoading.value
+    : loading.value
+})
 
   // =========================
   // RETURN
@@ -258,11 +269,11 @@ export function useReports() {
 
     searchQuery,
 
-    filteredReports,
-
     fetchReports,
 
     selectReport,
+
+    originReport,
 
     clearSelectedReport,
 
