@@ -42,8 +42,22 @@ const ReportSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['active', 'resolved', 'archived'],
+      enum: ['active', 'en_verificacion', 'asignado', 'resolved', 'archived'],
       default: 'active'
+    },
+
+    // RF_24: clasificación por criticidad
+    criticidad: {
+      type: String,
+      enum: ['baja', 'media', 'alta', 'critica', null],
+      default: null
+    },
+
+    // RF_24: clasificación por validez
+    validez: {
+      type: String,
+      enum: ['pendiente', 'valido', 'falso', 'dudoso'],
+      default: 'pendiente'
     },
 
     is_anonymous: Boolean,
