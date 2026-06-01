@@ -18,11 +18,9 @@ const emit = defineEmits([
   'logout',
   'change-tab'
 ])
-
 </script>
 
 <template>
-
   <header :class="[
     'px-6 py-4 flex items-center justify-between shadow-sm',
     emergencyMode
@@ -53,16 +51,6 @@ const emit = defineEmits([
             : 'bg-gray-700 text-white hover:bg-gray-600'"
         >
           Reportar
-        </button>
-
-        <button
-          @click="emit('change-tab', 'buscar')"
-          class="px-4 py-2 rounded-lg transition"
-          :class="activeTab === 'buscar'
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-700 text-white hover:bg-gray-600'"
-        >
-          Buscar
         </button>
 
         <!-- Solo visible para administradores -->
@@ -101,5 +89,4 @@ const emit = defineEmits([
     </div>
 
   </header>
-
 </template>

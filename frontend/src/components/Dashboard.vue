@@ -3,9 +3,8 @@
 import { ref, computed } from 'vue'
 import { AlertTriangle } from 'lucide-vue-next'
 
-import ReportView from './ReportView.vue'
-import SearchView from './search/SearchView.vue'
-import AppHeader from './AppHeader.vue'
+import ReportView    from './ReportView.vue'
+import AppHeader     from './AppHeader.vue'
 import AdminDashboard from './AdminDashboard.vue'
 
 const props = defineProps({
@@ -61,10 +60,6 @@ function changeTab(tab) {
         v-if="activeTab === 'reportar'"
       />
 
-      <SearchView
-        v-if="activeTab === 'buscar'"
-      />
-
       <AdminDashboard
         v-if="activeTab === 'admin-dashboard'"
         :current-user="currentUser"
@@ -73,5 +68,4 @@ function changeTab(tab) {
     </main>
 
   </div>
-
 </template>
