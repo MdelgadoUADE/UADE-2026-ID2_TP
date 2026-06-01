@@ -6,8 +6,9 @@ import {
 } from 'lucide-vue-next'
 
 const props = defineProps({
-  report:    { type: Object,  required: true },
-  isRelated: { type: Boolean, default: false },
+  report:      { type: Object,  required: true },
+  isRelated:   { type: Boolean, default: false },
+  highlighted: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['patch'])
@@ -68,9 +69,11 @@ function patch(field, value) {
   <div
     :class="[
       'rounded-xl border transition-all',
-      isRelated
-        ? 'border-indigo-200 bg-indigo-50/40 ml-6 border-l-4 border-l-indigo-400'
-        : 'border-gray-200 bg-white shadow-sm'
+      highlighted
+        ? 'border-emerald-400 bg-emerald-50/30 ring-2 ring-emerald-300 ring-offset-1 shadow-md'
+        : isRelated
+          ? 'border-indigo-200 bg-indigo-50/40 ml-6 border-l-4 border-l-indigo-400'
+          : 'border-gray-200 bg-white shadow-sm'
     ]"
   >
     <!-- ── Header ───────────────────────────────────── -->
@@ -81,6 +84,10 @@ function patch(field, value) {
         <div class="flex items-center gap-2 flex-wrap">
           <span class="font-semibold text-gray-800 text-sm">
             {{ report.is_anonymous ? 'Anónimo' : (report.user?.username ?? '—') }}
+          </span>
+          <span v-if="highlighted"
+            class="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
+            Gestionando
           </span>
           <!-- ID badge -->
           <span class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">

@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { LayoutDashboard, AlertTriangle, GitBranch, Search, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle } from 'lucide-vue-next'
+import { ref, onMounted, nextTick } from 'vue'
+import { LayoutDashboard, AlertTriangle, GitBranch, Search, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle, Pin } from 'lucide-vue-next'
 
 import AdminReportCard        from './AdminReportCard.vue'
 import IncidentStatsView      from './IncidentStatsView.vue'
@@ -9,6 +9,7 @@ import IncidentSearchView     from './IncidentSearchView.vue'
 import { useAdminReports }    from './composables/useAdminReports.js'
 
 const activeTab = ref('pendientes')
+const focusedReportId = ref(null)
 
 const TABS = [
   { id: 'estadisticas', label: 'Estadísticas', icon: LayoutDashboard },
@@ -39,6 +40,18 @@ function applyFilters() {
 function handleReset() {
   resetFilters()
   fetchReports()
+}
+
+async function goToReport(reportId) {
+  focusedReportId.value = String(reportId)
+  // Reset filters so the report is visible
+  resetFilters()
+  await fetchReports()
+  activeTab.value = 'pendientes'
+  await nextTick()
+  // Scroll to the highlighted card
+  const el = document.getElementById('report-' + String(reportId))
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 </script>
 
@@ -166,6 +179,20 @@ function handleReset() {
         </div>
       </div>
 
+      <!-- Banner reporte enfocado -->
+      <div v-if="focusedReportId"
+        class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm">
+        <Pin class="w-4 h-4 text-emerald-600 shrink-0" />
+        <div class="flex-1 min-w-0">
+          <span class="font-semibold text-emerald-800">Mostrando reporte gestionado</span>
+          <span class="text-emerald-600 font-mono ml-2 text-xs break-all">{{ focusedReportId }}</span>
+        </div>
+        <button @click="focusedReportId = null"
+          class="text-emerald-600 hover:text-emerald-800 transition-colors shrink-0">
+          <AlertCircle class="w-4 h-4" />
+        </button>
+      </div>
+
       <!-- Cola -->
       <div v-if="loading" class="flex items-center justify-center py-12 text-gray-400 gap-2">
         <RefreshCw class="w-4 h-4 animate-spin" />
@@ -189,11 +216,14 @@ function handleReset() {
           :key="group.leader._id"
           class="space-y-2"
         >
-          <AdminReportCard
-            :report="group.leader"
-            :is-related="false"
-            @patch="handlePatch"
-          />
+          <div :id="'report-' + String(group.leader._id)">
+            <AdminReportCard
+              :report="group.leader"
+              :is-related="false"
+              :highlighted="focusedReportId === String(group.leader._id)"
+              @patch="handlePatch"
+            />
+          </div>
 
           <template v-if="group.is_group && group.related.length">
             <div class="ml-4 border-l-2 border-indigo-200 pl-2 space-y-2">
@@ -204,13 +234,18 @@ function handleReset() {
                 </svg>
                 {{ group.related.length }} reporte{{ group.related.length !== 1 ? 's' : '' }} relacionado{{ group.related.length !== 1 ? 's' : '' }}
               </div>
-              <AdminReportCard
+              <div
                 v-for="rel in group.related"
                 :key="rel._id"
-                :report="rel"
-                :is-related="true"
-                @patch="handlePatch"
-              />
+                :id="'report-' + String(rel._id)"
+              >
+                <AdminReportCard
+                  :report="rel"
+                  :is-related="true"
+                  :highlighted="focusedReportId === String(rel._id)"
+                  @patch="handlePatch"
+                />
+              </div>
             </div>
           </template>
 
@@ -220,7 +255,7 @@ function handleReset() {
     </template>
 
     <!-- ── Tab: Búsqueda ─────────────────────────────── -->
-    <IncidentSearchView v-if="activeTab === 'busqueda'" />
+    <IncidentSearchView v-if="activeTab === 'busqueda'" @manage-report="goToReport" />
 
     <!-- ── Tab: Clusters ─────────────────────────────── -->
     <IncidentClustersView v-if="activeTab === 'clusters'" />

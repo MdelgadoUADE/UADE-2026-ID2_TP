@@ -4,8 +4,10 @@ import {
   Search, X, MapPin, Clock3, Tag, ShieldCheck,
   FileText, User, Copy, Check, ChevronRight,
   ShieldAlert, Paperclip, Tags, Radar, ArrowLeft,
-  Hash
+  Hash, Settings
 } from 'lucide-vue-next'
+
+const emit = defineEmits(['manage-report'])
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const reports       = ref([])
@@ -123,7 +125,6 @@ function criticidadColor(c) {
 
 function selectReport(report) {
   selectedReport.value = report
-  // If we were in nearby mode and pick a different report, stay in nearby mode
 }
 
 async function copyId(id) {
@@ -132,10 +133,13 @@ async function copyId(id) {
     copiedId.value = true
     setTimeout(() => { copiedId.value = false }, 1500)
   } catch {
-    // Fallback for environments without clipboard API
     copiedId.value = true
     setTimeout(() => { copiedId.value = false }, 1500)
   }
+}
+
+function manageReport() {
+  emit('manage-report', selectedReport.value._id)
 }
 </script>
 
@@ -299,14 +303,26 @@ async function copyId(id) {
               </div>
             </div>
 
-            <!-- Botón nearby -->
-            <button
-              @click="fetchNearby(selectedReport._id)"
-              class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium shrink-0"
-            >
-              <Radar class="w-4 h-4" />
-              <span class="hidden sm:inline">Cercanos</span>
-            </button>
+            <!-- Botones de acción -->
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Botón Gestionar -->
+              <button
+                @click="manageReport"
+                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium"
+              >
+                <Settings class="w-4 h-4" />
+                <span class="hidden sm:inline">Gestionar</span>
+              </button>
+
+              <!-- Botón Cercanos -->
+              <button
+                @click="fetchNearby(selectedReport._id)"
+                class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium"
+              >
+                <Radar class="w-4 h-4" />
+                <span class="hidden sm:inline">Cercanos</span>
+              </button>
+            </div>
 
           </div>
 
