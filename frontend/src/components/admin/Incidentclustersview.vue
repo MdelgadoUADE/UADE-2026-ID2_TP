@@ -1,10 +1,13 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import {
   GitBranch, Search, X, MapPin, Clock, Tag, SlidersHorizontal,
   ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, Loader2,
   Layers, Check, RefreshCw, Hash
 } from 'lucide-vue-next'
+
+// ─── Clave de sessionStorage ─────────────────────────────────────────────────
+const SESSION_KEY = 'reportit_clusters'
 
 // ─── Estado de clusters (filas estilo Burp Suite) ──────────────────────────
 const clusters = ref([])        // [{ anchorReport, relatedReports, params, id, label, color }]
@@ -42,6 +45,78 @@ const correlateError = ref(null)
 // ─── Panel expandido por cluster ────────────────────────────────────────────
 const expandedClusters = ref(new Set())
 const expandedReports  = ref(new Set())
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SESSION STORAGE — persistencia durante la sesión
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Restaura los clusters guardados en sessionStorage al montar el componente.
+ * El color se reconstruye por índice para evitar guardar los objetos de clase
+ * de Tailwind (que son estáticos y no cambian).
+ */
+function loadFromSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return
+    const saved = JSON.parse(raw)
+    if (!Array.isArray(saved) || saved.length === 0) return
+    // Reconstruir el color a partir del índice guardado para mantener consistencia
+    clusters.value = saved.map(c => ({
+      ...c,
+      color: clusterColors[c.colorIdx % clusterColors.length],
+    }))
+    // Re-expandir el último cluster (UX: mismo comportamiento que al crearlo)
+    if (clusters.value.length > 0) {
+      const lastId = clusters.value[clusters.value.length - 1].id
+      expandedClusters.value = new Set([lastId])
+    }
+  } catch {
+    // Si el JSON está corrupto simplemente empezamos de cero
+    sessionStorage.removeItem(SESSION_KEY)
+  }
+}
+
+/**
+ * Serializa los clusters actuales a sessionStorage.
+ * Guardamos colorIdx (número) en vez del objeto color para evitar
+ * duplicar las clases de Tailwind y facilitar la reconstrucción.
+ */
+function saveToSession() {
+  try {
+    const serializable = clusters.value.map((c, i) => ({
+      id:             c.id,
+      label:          c.label,
+      anchorReport:   c.anchorReport,
+      relatedReports: c.relatedReports,
+      params:         c.params,
+      colorIdx:       i % clusterColors.length,
+    }))
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(serializable))
+  } catch {
+    // sessionStorage lleno u otro error → no interrumpir el flujo
+  }
+}
+
+/** Limpia los clusters del sessionStorage y del estado (llamado en logout). */
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY)
+  clusters.value = []
+  expandedClusters.value = new Set()
+  expandedReports.value  = new Set()
+}
+
+// Al montar: cargar clusters guardados
+onMounted(loadFromSession)
+
+// Cada vez que cambia el array de clusters → persistir
+watch(clusters, saveToSession, { deep: true })
+
+// Escuchar el evento global de logout emitido desde App.vue
+window.addEventListener('reportit:logout', clearSession)
+onBeforeUnmount(() => {
+  window.removeEventListener('reportit:logout', clearSession)
+})
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEARCH REPORTS
@@ -159,16 +234,16 @@ async function createCluster() {
       return matchChecks.length > 0 && matchChecks.every(Boolean)
     })
 
-    const colorIdx = clusters.value.length % clusterColors.length
+    const colorIdx   = clusters.value.length % clusterColors.length
     const clusterNum = clusters.value.length + 1
 
     clusters.value.push({
-      id:            Date.now(),
-      label:         `Cluster #${clusterNum}`,
-      anchorReport:  anchor,
+      id:             Date.now(),
+      label:          `Cluster #${clusterNum}`,
+      anchorReport:   anchor,
       relatedReports: related,
-      params:        JSON.parse(JSON.stringify(params.value)),
-      color:         clusterColors[colorIdx],
+      params:         JSON.parse(JSON.stringify(params.value)),
+      color:          clusterColors[colorIdx],
     })
 
     // Auto-expand new cluster
@@ -235,7 +310,6 @@ const enabledCount = computed(() =>
   [params.value.useTags, params.value.useLocation, params.value.useTime].filter(Boolean).length
 )
 </script>
-
 <template>
   <div class="space-y-5">
 

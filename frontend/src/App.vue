@@ -35,6 +35,10 @@ function onExitEmergency() {
 }
 
 function logout() {
+  // Notificar a los componentes que escuchan (ej: IncidentClustersView)
+  // para que limpien su sessionStorage antes de desmontarse.
+  window.dispatchEvent(new Event('reportit:logout'))
+
   isLogged.value = false
   currentUser.value = null
 }
