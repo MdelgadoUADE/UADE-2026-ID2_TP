@@ -4,7 +4,7 @@ import { LayoutDashboard, AlertTriangle, GitBranch, Search, SlidersHorizontal, R
 
 import AdminReportCard        from './AdminReportCard.vue'
 import IncidentStatsView      from './IncidentStatsView.vue'
-// import IncidentClustersView   from './IncidentClustersView.vue'
+import IncidentClustersView   from './IncidentClustersView.vue'
 import IncidentSearchView     from './IncidentSearchView.vue'
 import { useAdminReports }    from './composables/useAdminReports.js'
 
