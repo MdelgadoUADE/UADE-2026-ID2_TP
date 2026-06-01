@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import {
   GitBranch, Search, X, MapPin, Clock, Tag, SlidersHorizontal,
   ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, Loader2,
-  Layers, Check, RefreshCw
+  Layers, Check, RefreshCw, Hash
 } from 'lucide-vue-next'
 
 // ─── Estado de clusters (filas estilo Burp Suite) ──────────────────────────
@@ -63,7 +63,8 @@ async function searchReports() {
       const notes    = (r.notes || '').toLowerCase()
       const tags     = JSON.stringify(r.tags || {}).toLowerCase()
       const address  = (r.report_location?.address || '').toLowerCase()
-      return username.includes(q) || notes.includes(q) || tags.includes(q) || address.includes(q)
+      const id       = String(r._id || '').toLowerCase()
+      return username.includes(q) || notes.includes(q) || tags.includes(q) || address.includes(q) || id.includes(q)
     }).slice(0, 10)
   } catch (e) {
     searchError.value = 'Error buscando reportes'
@@ -108,7 +109,6 @@ function countTagMatches(tagsA, tagsB) {
     const vb = String(tagsB[k]).toLowerCase()
     if (va === vb) matches++
     else if (typeof tagsA[k] === 'object' && typeof tagsB[k] === 'object') {
-      // compare nested objects
       const subKeysA = Object.keys(tagsA[k])
       for (const sk of subKeysA) {
         if (tagsB[k][sk] !== undefined && String(tagsA[k][sk]).toLowerCase() === String(tagsB[k][sk]).toLowerCase()) matches++
@@ -156,7 +156,6 @@ async function createCluster() {
         matchChecks.push(diffH <= params.value.timeHours)
       }
 
-      // All enabled checks must pass
       return matchChecks.length > 0 && matchChecks.every(Boolean)
     })
 
@@ -231,6 +230,7 @@ function statusColor(s) {
   return m[s] || 'bg-gray-100 text-gray-600'
 }
 
+
 const enabledCount = computed(() =>
   [params.value.useTags, params.value.useLocation, params.value.useTime].filter(Boolean).length
 )
@@ -273,6 +273,10 @@ const enabledCount = computed(() =>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-semibold text-indigo-800">{{ selectedAnchor.user?.username || 'Anónimo' }}</span>
+                <!-- ID badge -->
+                <span class="flex items-center gap-0.5 text-xs font-mono text-indigo-500 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5">
+                  <Hash class="w-2.5 h-2.5" />{{ String(selectedAnchor._id) }}
+                </span>
                 <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium', statusColor(selectedAnchor.status)]">
                   {{ selectedAnchor.status }}
                 </span>
@@ -300,7 +304,7 @@ const enabledCount = computed(() =>
                 v-model="searchQuery"
                 @input="searchReports"
                 type="text"
-                placeholder="Buscar por usuario, dirección, tag, notas..."
+                placeholder="Buscar por usuario, dirección, tag, notas, ID..."
                 class="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
               />
               <button v-if="searchQuery" @click="searchQuery = ''; searchResults = []"
@@ -325,6 +329,10 @@ const enabledCount = computed(() =>
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-sm font-medium text-gray-800 group-hover:text-indigo-700 transition-colors">
                       {{ r.user?.username || 'Anónimo' }}
+                    </span>
+                    <!-- ID en resultados de búsqueda -->
+                    <span class="flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">
+                      <Hash class="w-2.5 h-2.5" />{{ String(r._id) }}
                     </span>
                     <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium', statusColor(r.status)]">
                       {{ r.status }}
@@ -477,18 +485,18 @@ const enabledCount = computed(() =>
           @click="toggleCluster(cluster.id)"
           :class="['w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:brightness-[0.97]', cluster.color.bg]"
         >
-          <!-- Dot de color -->
           <span :class="['w-2.5 h-2.5 rounded-full shrink-0', cluster.color.dot]" />
 
-          <!-- Label y ancla -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap">
               <span :class="['text-sm font-bold', cluster.color.text]">{{ cluster.label }}</span>
               <span class="text-xs text-gray-500 font-normal">
                 Ancla: <span class="font-medium text-gray-700">{{ cluster.anchorReport.user?.username || 'Anónimo' }}</span>
               </span>
+              <span class="flex items-center gap-1 text-xs font-mono text-gray-500">
+                ReporteID: <span class="font-medium text-gray-700">{{ String(cluster.anchorReport._id) }}</span>
+              </span>
             </div>
-            <!-- Parámetros usados (resumen compacto) -->
             <div class="flex items-center gap-2 mt-0.5 flex-wrap">
               <span v-if="cluster.params.useTags"
                 class="text-xs bg-white/70 border border-current/20 rounded px-1.5 py-0.5 text-gray-600">
@@ -505,7 +513,6 @@ const enabledCount = computed(() =>
             </div>
           </div>
 
-          <!-- Conteo y acciones -->
           <div class="flex items-center gap-3 shrink-0">
             <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full',
               cluster.relatedReports.length > 0 ? 'bg-white text-gray-700 shadow-sm' : 'bg-white/60 text-gray-400']">
@@ -534,15 +541,16 @@ const enabledCount = computed(() =>
               @click="toggleReport('anchor-' + cluster.id)"
               class="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
-              <!-- Número de fila (estilo Burp) -->
               <span class="text-xs font-mono text-gray-400 w-5 shrink-0 text-right">#</span>
-              <!-- Indicador de ancla -->
               <span class="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">
                 <Check class="w-2.5 h-2.5" /> Ancla
               </span>
-              <!-- Username -->
-              <span class="text-sm font-semibold text-gray-800 w-28 shrink-0 truncate">
+              <!-- Username + ID -->
+              <span class="text-sm font-semibold text-gray-800 shrink-0 truncate">
                 {{ cluster.anchorReport.user?.username || 'Anónimo' }}
+              </span>
+              <span class="flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 shrink-0">
+                <Hash class="w-2.5 h-2.5" />{{ String(cluster.anchorReport._id) }}
               </span>
               <!-- Status badge -->
               <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0', statusColor(cluster.anchorReport.status)]">
@@ -614,9 +622,12 @@ const enabledCount = computed(() =>
               >
                 <!-- Número de fila -->
                 <span class="text-xs font-mono text-gray-300 w-5 shrink-0 text-right">{{ idx + 1 }}</span>
-                <!-- Username -->
-                <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 w-28 shrink-0 truncate">
+                <!-- Username + ID -->
+                <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900 shrink-0 truncate">
                   {{ report.user?.username || 'Anónimo' }}
+                </span>
+                <span class="flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 group-hover:bg-gray-200 rounded px-1.5 py-0.5 shrink-0 transition-colors">
+                  <Hash class="w-2.5 h-2.5" />{{ String(report._id) }}
                 </span>
                 <!-- Status -->
                 <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0', statusColor(report.status)]">
