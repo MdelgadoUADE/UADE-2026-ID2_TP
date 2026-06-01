@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import {
   MapPin, Clock3, Tags, UserX, Link2,
-  ChevronDown, ChevronUp, ShieldAlert
+  ChevronDown, ChevronUp, ShieldAlert, Hash
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -76,11 +76,15 @@ function patch(field, value) {
     <!-- ── Header ───────────────────────────────────── -->
     <div class="flex items-start justify-between p-4 gap-3">
 
-      <!-- Left: usuario + dirección + tiempo -->
+      <!-- Left: usuario + id + dirección + tiempo -->
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="font-semibold text-gray-800 text-sm">
             {{ report.is_anonymous ? 'Anónimo' : (report.user?.username ?? '—') }}
+          </span>
+          <!-- ID badge -->
+          <span class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+            <Hash class="w-2.5 h-2.5" />{{ String(report._id) }}
           </span>
           <span v-if="report.is_anonymous"
             class="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
