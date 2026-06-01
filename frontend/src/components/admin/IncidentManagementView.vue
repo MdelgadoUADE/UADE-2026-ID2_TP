@@ -1,14 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { BarChart2, AlertTriangle, Users, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle } from 'lucide-vue-next'
+import { LayoutDashboard, AlertTriangle, Users, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle } from 'lucide-vue-next'
 
-import AdminReportCard from './AdminReportCard.vue'
+import AdminReportCard    from './AdminReportCard.vue'
+import IncidentStatsView  from './IncidentStatsView.vue'
 import { useAdminReports } from './composables/useAdminReports.js'
 
 const activeTab = ref('pendientes')
 
 const TABS = [
-  { id: 'estadisticas', label: 'Estadísticas', icon: BarChart2  },
+  { id: 'estadisticas', label: 'Estadísticas', icon: LayoutDashboard },
   { id: 'pendientes',   label: 'Pendientes',   icon: AlertTriangle },
   { id: 'clusters',     label: 'Clusters',     icon: Users, soon: true },
 ]
@@ -66,11 +67,7 @@ function handleReset() {
     </div>
 
     <!-- ── Tab: Estadísticas ─────────────────────────── -->
-    <div v-if="activeTab === 'estadisticas'"
-      class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
-      <BarChart2 class="w-10 h-10 opacity-30" />
-      <p class="text-sm">Los gráficos se implementan en el próximo paso.</p>
-    </div>
+    <IncidentStatsView v-if="activeTab === 'estadisticas'" />
 
     <!-- ── Tab: Pendientes ───────────────────────────── -->
     <template v-if="activeTab === 'pendientes'">

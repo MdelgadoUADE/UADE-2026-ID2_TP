@@ -40,6 +40,73 @@ router.post("/", async (req, res) => {
 });
 
 // =========================
+// GET /reports/admin/stats — Agregaciones para gráficos de Cat. 1
+// Devuelve: por_status, por_criticidad, por_validez, anonimos, trust_score_ranges
+// =========================
+router.get("/admin/stats", async (req, res) => {
+  try {
+    const [result] = await Report.aggregate([
+      {
+        $facet: {
+          // Embudo de estados
+          por_status: [
+            { $group: { _id: "$status", count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+
+          // Distribución por criticidad
+          por_criticidad: [
+            { $group: { _id: { $ifNull: ["$criticidad", "sin_clasificar"] }, count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+
+          // Distribución por validez
+          por_validez: [
+            { $group: { _id: { $ifNull: ["$validez", "pendiente"] }, count: { $sum: 1 } } },
+            { $sort: { count: -1 } },
+          ],
+
+          // Anónimo vs autenticado
+          anonimos: [
+            { $group: { _id: "$is_anonymous", count: { $sum: 1 } } },
+          ],
+
+          // Rangos de trust_score
+          trust_score_ranges: [
+            {
+              $bucket: {
+                groupBy: "$trust_score",
+                boundaries: [0, 0.2, 0.4, 0.6, 0.8, 1.01],
+                default: "sin_score",
+                output: { count: { $sum: 1 } },
+              },
+            },
+          ],
+
+          // Total general
+          totales: [
+            {
+              $group: {
+                _id: null,
+                total: { $sum: 1 },
+                pendientes: { $sum: { $cond: [{ $in: ["$status", ["active", "en_verificacion"]] }, 1, 0] } },
+                resueltos:  { $sum: { $cond: [{ $eq: ["$status", "resolved"] }, 1, 0] } },
+                trust_promedio: { $avg: "$trust_score" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    res.json({ success: true, stats: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching stats" });
+  }
+});
+
+// =========================
 // GET /reports/admin — Cola de reportes para el dashboard
 // Filtros: status, is_anonymous, tag_key, tag_value, sort (reciente|antiguo)
 // RF_23: incluye agrupación de relacionados
