@@ -1,17 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { LayoutDashboard, AlertTriangle, Users, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle } from 'lucide-vue-next'
+import { LayoutDashboard, AlertTriangle, GitBranch, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle } from 'lucide-vue-next'
 
-import AdminReportCard    from './AdminReportCard.vue'
-import IncidentStatsView  from './IncidentStatsView.vue'
-import { useAdminReports } from './composables/useAdminReports.js'
+import AdminReportCard        from './AdminReportCard.vue'
+import IncidentStatsView      from './IncidentStatsView.vue'
+import IncidentClustersView   from './IncidentClustersView.vue'
+import { useAdminReports }    from './composables/useAdminReports.js'
 
 const activeTab = ref('pendientes')
 
 const TABS = [
   { id: 'estadisticas', label: 'Estadísticas', icon: LayoutDashboard },
   { id: 'pendientes',   label: 'Pendientes',   icon: AlertTriangle },
-  { id: 'clusters',     label: 'Clusters',     icon: Users, soon: true },
+  { id: 'clusters',     label: 'Clusters',     icon: GitBranch },
 ]
 
 const {
@@ -48,20 +49,16 @@ function handleReset() {
         <button
           v-for="tab in TABS"
           :key="tab.id"
-          :disabled="tab.soon"
-          @click="!tab.soon && (activeTab = tab.id)"
+          @click="activeTab = tab.id"
           :class="[
             'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
-            tab.soon
-              ? 'border-transparent text-gray-300 cursor-not-allowed'
-              : activeTab === tab.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            activeTab === tab.id
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           ]"
         >
           <component :is="tab.icon" class="w-4 h-4" />
           {{ tab.label }}
-          <span v-if="tab.soon" class="text-xs font-normal opacity-60">· pronto</span>
         </button>
       </nav>
     </div>
@@ -221,11 +218,7 @@ function handleReset() {
     </template>
 
     <!-- ── Tab: Clusters ─────────────────────────────── -->
-    <div v-if="activeTab === 'clusters'"
-      class="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
-      <Users class="w-10 h-10 opacity-30" />
-      <p class="text-sm">Clusters — funcionalidad futura.</p>
-    </div>
+    <IncidentClustersView v-if="activeTab === 'clusters'" />
 
   </div>
 </template>
