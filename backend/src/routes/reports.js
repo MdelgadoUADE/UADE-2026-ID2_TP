@@ -207,6 +207,122 @@ router.get("/admin", async (req, res) => {
 });
 
 // =========================
+// GET /reports/admin/geo-stats — Categoría 2: Geo-Análisis
+// Query params:
+//   criticidad  : '' | 'baja' | 'media' | 'alta' | 'critica'
+//   horasAtras  : número (default 48, 0 = sin límite)
+//   minReportes : número (default 1, filtra zonas con menos reportes en el bar chart)
+//   validez     : '' | 'valido' | 'dudoso' | 'falso' | 'pendiente'
+// =========================
+router.get("/admin/geo-stats", async (req, res) => {
+  try {
+    const {
+      criticidad,
+      horasAtras = 48,
+      minReportes = 1,
+      validez,
+    } = req.query;
+
+    // ── Construir filtro base ──────────────────────────────────────────────
+    const filter = {};
+
+    if (criticidad) filter.criticidad = criticidad;
+    if (validez)    filter.validez    = validez;
+
+    const horas = parseInt(horasAtras, 10);
+    if (!isNaN(horas) && horas > 0) {
+      filter.timestamp = { $gte: new Date(Date.now() - horas * 60 * 60 * 1000) };
+    }
+
+    // ── Puntos para el heatmap ────────────────────────────────────────────
+    const reports = await Report.find(filter)
+      .select("report_location criticidad")
+      .lean();
+
+    const CRITICIDAD_WEIGHT = { critica: 1.0, alta: 0.75, media: 0.45, baja: 0.2 };
+    const heatPoints = reports
+      .filter(r => r.report_location?.coordinates?.length === 2)
+      .map(r => ({
+        lat:    r.report_location.coordinates[1],
+        lng:    r.report_location.coordinates[0],
+        weight: CRITICIDAD_WEIGHT[r.criticidad] ?? 0.3,
+      }));
+
+    // ── Agregación por zona (segundo segmento del address de Nominatim) ───
+    const [zoneResult] = await Report.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          zona_raw: {
+            $trim: {
+              input: {
+                $arrayElemAt: [
+                  { $split: ["$report_location.address", ","] },
+                  1,
+                ],
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          zona: {
+            $cond: {
+              if:   { $or: [{ $eq: ["$zona_raw", null] }, { $eq: ["$zona_raw", ""] }] },
+              then: "Sin zona",
+              else: "$zona_raw",
+            },
+          },
+        },
+      },
+      {
+        $facet: {
+          por_zona: [
+            {
+              $group: {
+                _id:         "$zona",
+                count:       { $sum: 1 },
+                criticidades: { $push: "$criticidad" },
+              },
+            },
+            { $sort:  { count: -1 } },
+            { $limit: 10 },
+          ],
+          totales: [
+            {
+              $group: {
+                _id:      null,
+                total:    { $sum: 1 },
+                criticos: {
+                  $sum: { $cond: [{ $in: ["$criticidad", ["alta", "critica"]] }, 1, 0] },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const minRep  = parseInt(minReportes, 10) || 1;
+    const porZona = (zoneResult?.por_zona ?? []).filter(z => z.count >= minRep);
+
+    res.json({
+      success:    true,
+      heatPoints,
+      porZona,
+      totales:    zoneResult?.totales?.[0] ?? { total: 0, criticos: 0 },
+      filtros:    { criticidad, horasAtras: horas, minReportes: minRep, validez },
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching geo stats" });
+  }
+});
+
+
+// =========================
 // GET /reports/:id — Reporte por ID
 // =========================
 router.get("/:id", async (req, res) => {
