@@ -12,10 +12,10 @@ const activeTab = ref('pendientes')
 const focusedReportId = ref(null)
 
 const TABS = [
-  { id: 'estadisticas', label: 'Estadísticas', icon: LayoutDashboard },
-  { id: 'pendientes',   label: 'Pendientes',   icon: AlertTriangle },
-  { id: 'busqueda',     label: 'Búsqueda',     icon: Search },
-  { id: 'clusters',     label: 'Clusters',     icon: GitBranch },
+  { id: 'estadisticas', label: 'Estadísticas',  icon: LayoutDashboard },
+  { id: 'pendientes',   label: 'Pendientes',    icon: AlertTriangle   },
+  { id: 'busqueda',     label: 'Búsqueda',      icon: Search          },
+  { id: 'clusters',     label: 'Clusters',      icon: GitBranch       },
 ]
 
 const {

@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import IncidentManagementView from './admin/IncidentManagementView.vue'
+import IncidentGeoView        from './admin/IncidentGeoView.vue'
 
 defineProps({
   currentUser: Object
@@ -10,9 +11,9 @@ const activeCategory = ref('incidentes')
 
 const CATEGORIES = [
   { id: 'incidentes', label: 'Gestión de incidentes', emoji: '🚨' },
-  { id: 'geo',        label: 'Geo-análisis',           emoji: '📍', soon: true },
-  { id: 'temporal',  label: 'Análisis temporal',       emoji: '⏱️', soon: true },
-  { id: 'confianza', label: 'Calidad y confianza',     emoji: '🛡️', soon: true },
+  { id: 'geo',        label: 'Geo-análisis',           emoji: '📍' },
+  { id: 'temporal',   label: 'Análisis temporal',      emoji: '⏱️', soon: true },
+  { id: 'confianza',  label: 'Calidad y confianza',    emoji: '🛡️', soon: true },
 ]
 </script>
 
@@ -42,6 +43,7 @@ const CATEGORIES = [
 
     <!-- Contenido de la categoría activa -->
     <IncidentManagementView v-if="activeCategory === 'incidentes'" />
+    <IncidentGeoView        v-if="activeCategory === 'geo'" />
 
   </div>
 </template>
