@@ -1,6 +1,7 @@
 import { ref } from 'vue'
+import { API_URL } from '../../../api.js'
 
-const BASE = 'http://localhost:3000/reports/admin/geo-stats'
+const BASE = `${API_URL}/reports/admin/geo-stats`
 
 export function useGeoStats() {
   const data    = ref(null)   // { heatPoints, porZona, totales, filtros }

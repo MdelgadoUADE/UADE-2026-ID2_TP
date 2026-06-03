@@ -1,6 +1,7 @@
 import { ref, reactive } from 'vue'
+import { API_URL } from '../../../api.js'
 
-const BASE = 'http://localhost:3000/reports'
+const BASE = `${API_URL}/reports`
 
 export function useAdminReports() {
 

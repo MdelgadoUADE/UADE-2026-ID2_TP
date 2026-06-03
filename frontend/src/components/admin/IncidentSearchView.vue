@@ -6,6 +6,8 @@ import {
   ShieldAlert, Paperclip, Tags, Radar, ArrowLeft,
   Hash, Settings
 } from 'lucide-vue-next'
+import { API_URL } from '../../api.js'
+
 
 const emit = defineEmits(['manage-report'])
 
@@ -28,7 +30,7 @@ async function fetchReports() {
   loading.value = true
   error.value   = null
   try {
-    const res  = await fetch('http://localhost:3000/reports')
+    const res  = await fetch(`${API_URL}/reports`)
     if (!res.ok) throw new Error('Error obteniendo reportes')
     reports.value = await res.json()
   } catch (e) {
@@ -46,7 +48,7 @@ async function fetchNearby(reportId) {
   nearbyLoading.value = true
   error.value         = null
   try {
-    const res  = await fetch(`http://localhost:3000/reports/near/${reportId}`)
+    const res  = await fetch(`${API_URL}/reports/near/${reportId}`)
     if (!res.ok) throw new Error('Error obteniendo reportes cercanos')
     const data = await res.json()
     nearbyReports.value = data.filter(r => String(r._id) !== String(reportId))

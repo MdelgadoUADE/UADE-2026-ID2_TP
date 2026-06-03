@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, inject, watch } from "vue";
 import { TAG_INPUT_CONFIG, DEFAULT_TAG_CONFIG } from '../config/tagInputConfig.js'
+import { API_URL } from "../api.js";
 
 
 
@@ -91,7 +92,7 @@ watch(selectedCategory, () => {
 
 onMounted(async () => {
   try {
-    const response = await fetch("http://localhost:3000/tags");
+    const response = await fetch(`${API_URL}/tags`);
 
     const data = await response.json();
 
@@ -121,7 +122,7 @@ async function handleSubmit() {
         return;
       }
 
-      const tagResponse = await fetch("http://localhost:3000/tags", {
+      const tagResponse = await fetch(`${API_URL}/tags`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +145,7 @@ async function handleSubmit() {
 
     /* Creando reporte */
 
-    const reportResponse = await fetch("http://localhost:3000/reports", {
+    const reportResponse = await fetch(`${API_URL}/reports`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

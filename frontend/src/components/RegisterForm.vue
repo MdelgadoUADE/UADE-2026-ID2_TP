@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { MapPin, Shield } from 'lucide-vue-next'
+import { API_URL } from '../api.js'
 
 const emit = defineEmits(['register-success', 'go-to-login'])
 
@@ -33,7 +34,7 @@ async function handleSubmit() {
   isLoading.value = true
 
   try {
-    const response = await fetch('http://localhost:3000/auth/register', {
+    const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

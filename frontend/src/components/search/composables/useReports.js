@@ -2,6 +2,8 @@ import {
   ref,
   computed
 } from 'vue'
+import { API_URL } from '../../../api.js'
+
 
 export function useReports() {
 
@@ -39,7 +41,7 @@ export function useReports() {
     try {
 
       const response = await fetch(
-        'http://localhost:3000/reports'
+        `${API_URL}/reports`
       )
 
       if (!response.ok) {
@@ -82,7 +84,7 @@ export function useReports() {
     try {
 
       const response = await fetch(
-        `http://localhost:3000/reports/near/${reportId}`
+        `${API_URL}/reports/near/${reportId}`
       )
 
       if (!response.ok) {

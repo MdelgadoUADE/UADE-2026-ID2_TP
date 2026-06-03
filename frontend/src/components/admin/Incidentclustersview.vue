@@ -5,6 +5,8 @@ import {
   ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, Loader2,
   Layers, Check, RefreshCw, Hash
 } from 'lucide-vue-next'
+import { API_URL } from '../../api.js'
+
 
 // ─── Clave de sessionStorage ─────────────────────────────────────────────────
 const SESSION_KEY = 'reportit_clusters'
@@ -130,7 +132,7 @@ async function searchReports() {
   searchLoading.value = true
   searchError.value   = null
   try {
-    const res  = await fetch('http://localhost:3000/reports')
+    const res  = await fetch(`${API_URL}/reports`)
     const data = await res.json()
     const q    = searchQuery.value.toLowerCase()
     searchResults.value = data.filter(r => {
@@ -199,7 +201,7 @@ async function createCluster() {
   correlateError.value = null
 
   try {
-    const res  = await fetch('http://localhost:3000/reports')
+    const res  = await fetch(`${API_URL}/reports`)
     const all  = await res.json()
 
     const anchor  = selectedAnchor.value
