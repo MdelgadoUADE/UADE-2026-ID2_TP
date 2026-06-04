@@ -11,22 +11,10 @@ services:
       - mongo
       - db
     environment:
-      # ═══════════════════════════════════════════════════════════════════
-      # SEED DEMO - Generador de Datos de Demostración
-      # ═══════════════════════════════════════════════════════════════════
-      # Descomenta las siguientes líneas para generar datos de demostración
-      # al iniciar el servidor. Ver backend/SEED_README.md para más info.
-      # ───────────────────────────────────────────────────────────────────
-      # - SEED_DEMO=true              # Activar generación de datos demo
-      # - SEED_REPORTS=5000           # Cantidad de reportes (default: 5000)
-      # - SEED_CLEAR=false            # Limpiar datos existentes (default: false)
-      # ───────────────────────────────────────────────────────────────────
-      # Ejemplos de uso:
-      #   - SEED_REPORTS=1000    → Prueba rápida (~10 segundos)
-      #   - SEED_REPORTS=5000    → Demo estándar (~30 segundos)
-      #   - SEED_REPORTS=10000   → Demo completa (~1 minuto)
-      #   - SEED_REPORTS=100000  → Performance test (~10 minutos)
-      # ═══════════════════════════════════════════════════════════════════
+      - SEED_DEMO=true              # Activar generación de datos demo
+      - SEED_REPORTS=5000           # Cantidad de reportes (default: 5000)
+      - SEED_CLEAR=false            # Limpiar datos existentes (default: false)
+
 
   frontend:
     build: ./frontend
