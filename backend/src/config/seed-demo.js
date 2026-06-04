@@ -469,17 +469,14 @@ function generateClusteredReports() {
   const clusteredReports = [];
   
   // Tipos de incidentes que generan buenos clusters
-  const clusterableTypes = [
-    'vehiculo_sospechoso',
-    'persona_sospechosa',
-    'robo',
-    'vandalismo'
-  ];
+  const clusterableTypes = INCIDENT_TYPES.filter(t =>
+    ['vehiculo_sospechoso', 'persona_sospechosa', 'robo', 'vandalismo'].includes(t.type)
+  );
   
   for (let i = 0; i < CONFIG.CLUSTER_COUNT; i++) {
     const clusterSize = randomInt(CONFIG.CLUSTER_SIZE_MIN, CONFIG.CLUSTER_SIZE_MAX);
     const zone = randomWeighted(ZONES);
-    const incidentData = INCIDENT_TYPES.find(t => t.type === randomChoice(clusterableTypes));
+    const incidentData = randomChoice(clusterableTypes);
     
     // Generar tags base que se mantendrán en el cluster
     const baseTags = generateTagsForType(incidentData.type);
