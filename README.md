@@ -63,6 +63,42 @@ Esto iniciará:
 - MongoDB
 - PostgreSQL
 
+### 🌱 Generador de Datos Demo (Opcional)
+
+Para demostrar las capacidades de MongoDB y el dashboard de analytics, puedes generar datos de demostración automáticamente:
+
+**Opción 1: Editar docker-compose.yml**
+
+Descomenta las líneas en la sección `backend > environment`:
+
+```yaml
+backend:
+  environment:
+    - SEED_DEMO=true
+    - SEED_REPORTS=5000
+```
+
+**Opción 2: Variables de entorno en línea de comandos**
+
+```bash
+# Linux/Mac
+SEED_DEMO=true SEED_REPORTS=5000 docker compose up --build
+
+# Windows PowerShell
+$env:SEED_DEMO="true"; $env:SEED_REPORTS="5000"; docker compose up --build
+```
+
+**Qué se genera:**
+- ✅ 5,000 reportes distribuidos en Buenos Aires y Córdoba
+- ✅ 25 clusters correlacionados detectables automáticamente
+- ✅ 11 tipos de incidentes con tags dinámicos
+- ✅ Distribución temporal realista (últimos 6 meses)
+- ✅ Estados, criticidad, validez y trust scores
+
+**Documentación completa:**
+- [Guía rápida](backend/SEED_README.md)
+- [Documentación detallada](SEED_DEMO_GUIDE.md)
+
 
 ## 2. Available Services
 
