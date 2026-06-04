@@ -11,9 +11,9 @@ services:
       - mongo
       - db
     environment:
-    #  - SEED_DEMO=true
-    #  - SEED_REPORTS=5000
-    #  - SEED_CLEAR=false
+      - SEED_DEMO=false
+      - SEED_REPORTS=5000
+      - SEED_CLEAR=false
 
   frontend:
     build: ./frontend
