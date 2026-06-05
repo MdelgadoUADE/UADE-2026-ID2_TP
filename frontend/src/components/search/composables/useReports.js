@@ -38,20 +38,15 @@ export function useReports() {
 
     try {
 
-      const response = await fetch(
-        'http://localhost:3000/reports'
-      )
-
-      if (!response.ok) {
-
-        throw new Error(
-          'Error obteniendo reportes'
-        )
-      }
-
+      const params = new URLSearchParams({ status: statusFilter.value })
+      const response = await fetch(`http://localhost:3000/reports/search?${params}`)
+      if (!response.ok) throw new Error('Error obteniendo reportes')
       const data = await response.json()
+      if (!data.success) throw new Error(data.message)
+      reports.value   = data.reports
+      totalCount.value = data.total
 
-      reports.value = data
+      
 
     } catch (err) {
 

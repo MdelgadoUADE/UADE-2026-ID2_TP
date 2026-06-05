@@ -5,6 +5,59 @@ const router = express.Router();
 const Report = require("../models/Report");
 
 // =========================
+// GET /reports/search — Búsqueda pública con filtros y paginación
+// Query params: status (default: 'active'), limit (default: 100), skip (default: 0)
+//               tag_key, tag_value, sort (reciente|antiguo)
+// =========================
+router.get("/search", async (req, res) => {
+  try {
+    const {
+      status = "active",
+      limit  = "100",
+      skip   = "0",
+      tag_key,
+      tag_value,
+      sort = "reciente",
+    } = req.query;
+
+    const filter = {};
+
+    if (status) filter.status = status;
+
+    if (tag_key && tag_value) {
+      filter[`tags.${tag_key}`] = tag_value;
+    } else if (tag_key) {
+      filter[`tags.${tag_key}`] = { $exists: true };
+    }
+
+    const sortOrder = sort === "antiguo" ? 1 : -1;
+    const limitNum  = Math.min(parseInt(limit, 10) || 100, 500); // cap en 500
+    const skipNum   = parseInt(skip, 10) || 0;
+
+    const [reports, totalCount] = await Promise.all([
+      Report.find(filter)
+        .sort({ timestamp: sortOrder })
+        .skip(skipNum)
+        .limit(limitNum)
+        .lean(),
+      Report.countDocuments(filter),
+    ]);
+
+    res.json({
+      success: true,
+      total:   totalCount,
+      count:   reports.length,
+      skip:    skipNum,
+      limit:   limitNum,
+      reports,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching reports" });
+  }
+});
+
+// =========================
 // POST /reports — Crear reporte
 // =========================
 router.post("/", async (req, res) => {

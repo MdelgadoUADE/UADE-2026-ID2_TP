@@ -10,12 +10,14 @@ import {
 const emit = defineEmits(['manage-report'])
 
 // ─── State ───────────────────────────────────────────────────────────────────
-const reports       = ref([])
-const loading       = ref(false)
-const error         = ref(null)
-const searchQuery   = ref('')
+const reports        = ref([])
+const loading        = ref(false)
+const error          = ref(null)
+const searchQuery    = ref('')
 const selectedReport = ref(null)
-const copiedId      = ref(false)
+const copiedId       = ref(false)
+const statusFilter   = ref('active')   // ← pre-seteado en "activo"
+const totalCount     = ref(0)
 
 // ─── Nearby state ─────────────────────────────────────────────────────────────
 const showingNearby   = ref(false)
@@ -28,9 +30,13 @@ async function fetchReports() {
   loading.value = true
   error.value   = null
   try {
-    const res  = await fetch('http://localhost:3000/reports')
+    const params = new URLSearchParams({ status: statusFilter.value })
+    const res  = await fetch(`http://localhost:3000/reports/search?${params}`)
     if (!res.ok) throw new Error('Error obteniendo reportes')
-    reports.value = await res.json()
+    const data = await res.json()
+    if (!data.success) throw new Error(data.message)
+    reports.value = data.reports
+    totalCount.value = data.total
   } catch (e) {
     error.value = e.message
   } finally {

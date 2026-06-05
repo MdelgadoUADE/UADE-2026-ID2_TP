@@ -11,7 +11,7 @@ services:
       - mongo
       - db
     environment:
-      - SEED_DEMO=false
+      - SEED_DEMO=true
       - SEED_REPORTS=5000
       - SEED_CLEAR=false
 
