@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { AlertTriangle, MapPin, Clock, Shield } from 'lucide-vue-next'
 import IncidentManagementView from './admin/IncidentManagementView.vue'
 import IncidentGeoView        from './admin/IncidentGeoView.vue'
 
@@ -10,10 +11,10 @@ defineProps({
 const activeCategory = ref('incidentes')
 
 const CATEGORIES = [
-  { id: 'incidentes', label: 'Gestión de incidentes', emoji: '🚨' },
-  { id: 'geo',        label: 'Geo-análisis',           emoji: '📍' },
-  { id: 'temporal',   label: 'Análisis temporal',      emoji: '⏱️', soon: true },
-  { id: 'confianza',  label: 'Calidad y confianza',    emoji: '🛡️', soon: true },
+  { id: 'incidentes', label: 'Gestión de incidentes', icon: AlertTriangle },
+  { id: 'geo',        label: 'Geo-análisis',           icon: MapPin },
+  { id: 'temporal',   label: 'Análisis temporal',      icon: Clock, soon: true },
+  { id: 'confianza',  label: 'Calidad y confianza',    icon: Shield, soon: true },
 ]
 </script>
 
@@ -36,7 +37,8 @@ const CATEGORIES = [
               : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:text-blue-600'
         ]"
       >
-        {{ cat.emoji }} {{ cat.label }}
+        <component :is="cat.icon" class="w-4 h-4" />
+        {{ cat.label }}
         <span v-if="cat.soon" class="text-xs font-normal opacity-60">· pronto</span>
       </button>
     </div>
