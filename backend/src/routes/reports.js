@@ -173,12 +173,16 @@ router.get("/admin", async (req, res) => {
       tag_value,
       criticidad,
       validez,
+      limit = "100",
+      skip  = "0",
       sort = "reciente",
     } = req.query;
 
     const filter = {};
 
-    if (status) filter.status = status;
+    // "active" por defecto si no se pasa nada; "" vacío = sin filtro (todos)
+    const statusValue = status === undefined ? "active" : status;
+    if (statusValue) filter.status = statusValue;
 
     if (is_anonymous !== undefined && is_anonymous !== "") {
       filter.is_anonymous = is_anonymous === "true";
@@ -196,11 +200,18 @@ router.get("/admin", async (req, res) => {
       filter[`tags.${tag_key}`] = { $exists: true };
     }
 
-    const sortOrder = sort === "antiguo" ? 1 : -1;
+    const sortOrder = sort === "antiguo" ? 1 : -1; 
+    const limitNum = Math.min(parseInt(limit, 10) || 100, 500);
+    const skipNum  = parseInt(skip, 10) || 0;
 
-    const reports = await Report.find(filter)
-      .sort({ timestamp: sortOrder })
-      .lean();
+    const [reports, totalCount] = await Promise.all([
+      Report.find(filter)
+        .sort({ timestamp: sortOrder })
+        .skip(skipNum)
+        .limit(limitNum)
+        .lean(),
+      Report.countDocuments(filter),
+    ]);
 
     // RF_23: agrupar reportes relacionados
     // Un reporte es "líder del grupo" si ningún otro lo menciona en related_reports
@@ -247,7 +258,8 @@ router.get("/admin", async (req, res) => {
 
     res.json({
       success: true,
-      total: reports.length,
+      total: totalCount,        // total real en DB con esos filtros
+      count: reports.length,    // cuántos vinieron en esta página
       groups,
     });
   } catch (error) {

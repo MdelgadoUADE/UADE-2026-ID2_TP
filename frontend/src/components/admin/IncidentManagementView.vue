@@ -19,8 +19,7 @@ const TABS = [
 ]
 
 const {
-  groups, total, loading, error,
-  filters,
+  groups, total, totalCount, loading, error, filters,
   fetchReports,
   updateReport,
   resetFilters,
@@ -91,7 +90,7 @@ async function goToReport(reportId) {
           <SlidersHorizontal class="w-4 h-4 text-gray-400" />
           <span class="text-sm font-semibold text-gray-700">Filtros de la cola</span>
           <span class="ml-auto text-xs text-gray-400">
-            {{ total }} reporte{{ total !== 1 ? 's' : '' }} encontrado{{ total !== 1 ? 's' : '' }}
+           Mostrando {{ groups.length }} de {{ total }} reporte{{ total !== 1 ? 's' : '' }}
           </span>
         </div>
 
@@ -99,14 +98,14 @@ async function goToReport(reportId) {
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Estado</label>
-            <select v-model="filters.status"
+            + <select v-model="filters.status"
               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
-              <option value="">Todos</option>
               <option value="active">Activo</option>
               <option value="en_verificacion">En verificación</option>
               <option value="asignado">Asignado</option>
               <option value="resolved">Resuelto</option>
               <option value="archived">Archivado</option>
+              <option value="">Todos</option>
             </select>
           </div>
 
