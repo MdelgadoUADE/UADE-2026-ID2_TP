@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, inject, watch } from "vue";
+import { Car, User, Building2, MapPin } from 'lucide-vue-next'
 import { TAG_INPUT_CONFIG, DEFAULT_TAG_CONFIG } from '../config/tagInputConfig.js'
 
 
@@ -29,10 +30,10 @@ const customDescription = ref("");
 
 // Categorías disponibles basadas en el tipo del schema
 const categories = [
-  { value: 'vehiculo', label: '🚗 Vehículo' },
-  { value: 'persona',  label: '🧍 Persona'  },
-  { value: 'ambiente', label: '🌆 Ambiente' },
-  { value: 'otros',    label: '📌 Otros'    },
+  { value: 'vehiculo', label: 'Vehículo', icon: Car },
+  { value: 'persona',  label: 'Persona',  icon: User },
+  { value: 'ambiente', label: 'Ambiente', icon: Building2 },
+  { value: 'otros',    label: 'Otros',    icon: MapPin },
 ]
 
 // Tags filtrados según la categoría seleccionada
@@ -252,11 +253,12 @@ async function handleSubmit() {
           <div class="grid grid-cols-2 gap-2">
             <button v-for="cat in categories" :key="cat.value" type="button" @click="selectedCategory = cat.value"
               :class="[
-                'px-3 py-2 rounded-lg border text-sm font-medium transition-colors',
+                'px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2',
                 selectedCategory === cat.value
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
               ]">
+              <component :is="cat.icon" class="w-4 h-4" />
               {{ cat.label }}
             </button>
           </div>

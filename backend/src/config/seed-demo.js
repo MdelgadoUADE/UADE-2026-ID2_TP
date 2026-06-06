@@ -464,7 +464,7 @@ function generateReport(options = {}) {
  * Genera clusters correlacionados para detección automática
  */
 function generateClusteredReports() {
-  console.log(`\n🔗 Generando ${CONFIG.CLUSTER_COUNT} clusters correlacionados...`);
+  console.log(`\n[CLUSTER] Generando ${CONFIG.CLUSTER_COUNT} clusters correlacionados...`);
   
   const clusteredReports = [];
   
@@ -528,7 +528,7 @@ function generateClusteredReports() {
     }
   }
   
-  console.log(`✅ ${clusteredReports.length} reportes en clusters generados`);
+  console.log(`[OK] ${clusteredReports.length} reportes en clusters generados`);
   return clusteredReports;
 }
 
@@ -536,7 +536,7 @@ function generateClusteredReports() {
  * Genera reportes normales sin correlación
  */
 function generateNormalReports(count) {
-  console.log(`\n📊 Generando ${count} reportes normales...`);
+  console.log(`\n[REPORTS] Generando ${count} reportes normales...`);
   
   const reports = [];
   const progressInterval = Math.floor(count / 10);
@@ -550,7 +550,7 @@ function generateNormalReports(count) {
     }
   }
   
-  console.log(`✅ ${reports.length} reportes normales generados`);
+  console.log(`[OK] ${reports.length} reportes normales generados`);
   return reports;
 }
 
@@ -558,7 +558,7 @@ function generateNormalReports(count) {
  * Inserta reportes en lotes con barra de progreso
  */
 async function insertInBatches(reports) {
-  console.log(`\n💾 Insertando ${reports.length} reportes en lotes de ${CONFIG.BATCH_SIZE}...`);
+  console.log(`\n[DB] Insertando ${reports.length} reportes en lotes de ${CONFIG.BATCH_SIZE}...`);
   
   const batches = [];
   for (let i = 0; i < reports.length; i += CONFIG.BATCH_SIZE) {
@@ -575,11 +575,11 @@ async function insertInBatches(reports) {
       const percent = Math.round((inserted / reports.length) * 100);
       console.log(`  Lote ${i + 1}/${batches.length}: ${percent}% (${inserted}/${reports.length})`);
     } catch (error) {
-      console.error(`  ⚠️  Error en lote ${i + 1}:`, error.message);
+      console.error(`  [WARNING] Error en lote ${i + 1}:`, error.message);
     }
   }
   
-  console.log(`✅ Inserción completada: ${inserted} reportes`);
+  console.log(`[OK] Inserción completada: ${inserted} reportes`);
   return inserted;
 }
 
@@ -590,9 +590,9 @@ async function insertInBatches(reports) {
 async function runDemoSeed() {
   try {
     console.log('\n' + '═'.repeat(70));
-    console.log('🌱 SEED DEMO - Generador de Datos de Demostración');
+    console.log('[SEED DEMO] Generador de Datos de Demostración');
     console.log('═'.repeat(70));
-    console.log(`📊 Configuración:`);
+    console.log(`[CONFIG] Configuración:`);
     console.log(`   - Total reportes: ${CONFIG.TOTAL_REPORTS.toLocaleString()}`);
     console.log(`   - Clusters: ${CONFIG.CLUSTER_COUNT}`);
     console.log(`   - Tamaño clusters: ${CONFIG.CLUSTER_SIZE_MIN}-${CONFIG.CLUSTER_SIZE_MAX} reportes`);
@@ -602,9 +602,9 @@ async function runDemoSeed() {
     
     // Limpiar reportes existentes si está configurado
     if (CONFIG.CLEAR_EXISTING) {
-      console.log('\n🗑️  Limpiando reportes existentes...');
+      console.log('\n[CLEAN] Limpiando reportes existentes...');
       const deleted = await Report.deleteMany({});
-      console.log(`✅ ${deleted.deletedCount} reportes eliminados`);
+      console.log(`[OK] ${deleted.deletedCount} reportes eliminados`);
     }
     
     // Calcular distribución
@@ -612,7 +612,7 @@ async function runDemoSeed() {
     const clusterReportsCount = Math.floor(CONFIG.CLUSTER_COUNT * avgClusterSize);
     const normalReportsCount = CONFIG.TOTAL_REPORTS - clusterReportsCount;
     
-    console.log(`\n📈 Distribución:`);
+    console.log(`\n[STATS] Distribución:`);
     console.log(`   - Reportes en clusters: ${clusterReportsCount.toLocaleString()}`);
     console.log(`   - Reportes normales: ${normalReportsCount.toLocaleString()}`);
     
@@ -638,14 +638,14 @@ async function runDemoSeed() {
     const duration = ((endTime - startTime) / 1000).toFixed(2);
     
     console.log('\n' + '═'.repeat(70));
-    console.log('✨ SEED DEMO COMPLETADO');
+    console.log('[SUCCESS] SEED DEMO COMPLETADO');
     console.log('═'.repeat(70));
-    console.log(`📊 Estadísticas:`);
+    console.log(`[STATS] Estadísticas:`);
     console.log(`   - Reportes insertados: ${inserted.toLocaleString()}`);
     console.log(`   - Tiempo total: ${duration}s`);
     console.log(`   - Velocidad: ${Math.round(inserted / duration)} reportes/s`);
     console.log('═'.repeat(70));
-    console.log('\n💡 Próximos pasos:');
+    console.log('\n[INFO] Próximos pasos:');
     console.log('   1. Accede al dashboard de analytics');
     console.log('   2. Explora las visualizaciones y estadísticas');
     console.log('   3. Prueba la detección de clusters con:');
@@ -655,7 +655,7 @@ async function runDemoSeed() {
     console.log('\n');
     
   } catch (error) {
-    console.error('\n❌ Error en seed demo:', error);
+    console.error('\n[ERROR] Error en seed demo:', error);
     throw error;
   }
 }

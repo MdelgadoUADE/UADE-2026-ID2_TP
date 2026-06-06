@@ -43,7 +43,7 @@ mongoose.connect("mongodb://mongo:27017/test")
   .catch(err => console.log(err));
 
 app.get("/", (req, res) => {
-  res.send("Backend funcionando 🚀");
+  res.send("Backend funcionando");
 });
 
 app.listen(3000, () => {
