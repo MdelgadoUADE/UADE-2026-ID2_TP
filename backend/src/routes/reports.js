@@ -18,6 +18,7 @@ router.get("/search", async (req, res) => {
       tag_key,
       tag_value,
       sort = "reciente",
+      q = "", // Parámetro de búsqueda de texto
     } = req.query;
 
     const filter = {};
@@ -28,6 +29,21 @@ router.get("/search", async (req, res) => {
       filter[`tags.${tag_key}`] = tag_value;
     } else if (tag_key) {
       filter[`tags.${tag_key}`] = { $exists: true };
+    }
+
+    // Búsqueda de texto en múltiples campos
+    if (q && q.trim()) {
+      const searchRegex = new RegExp(q.trim(), 'i');
+      filter.$or = [
+        { 'user.username': searchRegex },
+        { 'user.email': searchRegex },
+        { 'notes': searchRegex },
+        { 'report_location.address': searchRegex },
+        { '_id': q.trim().match(/^[0-9a-fA-F]{24}$/) ? q.trim() : null }, // Búsqueda exacta por ID si es válido
+      ].filter(condition => {
+        // Filtrar condiciones nulas (como cuando el ID no es válido)
+        return condition._id !== null || !condition._id;
+      });
     }
 
     const sortOrder = sort === "antiguo" ? 1 : -1;

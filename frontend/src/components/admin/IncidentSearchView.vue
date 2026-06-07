@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   Search, X, MapPin, Clock3, Tag, ShieldCheck,
   FileText, User, Copy, Check,
@@ -16,13 +16,28 @@ const selectedReport = ref(null)
 const copiedId       = ref(false)
 const statusFilter   = ref('active')   // ← pre-seteado en "activo"
 const totalCount     = ref(0)
+let searchTimeout    = null
 
-// ─── Fetch all reports ────────────────────────────────────────────────────────
+// ─── Fetch reports with search ────────────────────────────────────────────────
 async function fetchReports() {
   loading.value = true
   error.value   = null
   try {
-    const params = new URLSearchParams({ status: statusFilter.value })
+    const params = new URLSearchParams()
+    
+    // Agregar filtro de estado
+    if (statusFilter.value) {
+      params.append('status', statusFilter.value)
+    }
+    
+    // Agregar búsqueda de texto
+    if (searchQuery.value.trim()) {
+      params.append('q', searchQuery.value.trim())
+    }
+    
+    // Sin límite para búsqueda, pero con límite razonable
+    params.append('limit', '500')
+    
     const res  = await fetch(`http://localhost:3000/reports/search?${params}`)
     if (!res.ok) throw new Error('Error obteniendo reportes')
     const data = await res.json()
@@ -38,21 +53,21 @@ async function fetchReports() {
 
 onMounted(fetchReports)
 
-// ─── Search filter ────────────────────────────────────────────────────────────
-const activeList = computed(() => {
-  if (!searchQuery.value.trim()) return reports.value
-  const q = searchQuery.value.toLowerCase()
-  return reports.value.filter(r => {
-    return (
-      (r.user?.username  || '').toLowerCase().includes(q) ||
-      (r.user?.email     || '').toLowerCase().includes(q) ||
-      (r.notes           || '').toLowerCase().includes(q) ||
-      (r.report_location?.address || '').toLowerCase().includes(q) ||
-      JSON.stringify(r.tags || {}).toLowerCase().includes(q) ||
-      String(r._id).toLowerCase().includes(q)
-    )
-  })
+// ─── Watch para búsqueda con debounce ─────────────────────────────────────────
+watch(searchQuery, () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    fetchReports()
+  }, 300) // 300ms de debounce
 })
+
+// ─── Watch para cambio de estado ──────────────────────────────────────────────
+watch(statusFilter, () => {
+  fetchReports()
+})
+
+// ─── Lista activa (ahora solo muestra lo que viene del backend) ───────────────
+const activeList = computed(() => reports.value)
 
 const activeLoading = computed(() => loading.value)
 
@@ -184,9 +199,28 @@ async function updateReportField(field, value) {
           </button>
         </div>
 
-        <div class="mt-1.5 flex items-center justify-between">
+        <!-- Filtro de estado -->
+        <div class="mt-2.5">
+          <label class="text-xs text-gray-500 block mb-1.5">Filtrar por estado</label>
+          <select
+            v-model="statusFilter"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+          >
+            <option value="active">Activo</option>
+            <option value="en_verificacion">En verificación</option>
+            <option value="asignado">Asignado</option>
+            <option value="resolved">Resuelto</option>
+            <option value="archived">Archivado</option>
+            <option value="">Todos los estados</option>
+          </select>
+        </div>
+
+        <div class="mt-2 flex items-center justify-between">
           <span class="text-xs text-gray-400">
-            {{ activeList.length }} reporte{{ activeList.length !== 1 ? 's' : '' }}
+            {{ activeList.length }} de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : '' }}
+          </span>
+          <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
+            Buscando...
           </span>
         </div>
       </div>
