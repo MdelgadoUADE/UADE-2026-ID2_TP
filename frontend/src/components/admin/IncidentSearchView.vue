@@ -358,28 +358,25 @@ async function updateReportField(field, value) {
         </div>
 
         <div class="mt-2.5">
-          <label class="text-xs text-gray-500 block mb-1.5">Reportes por página</label>
-          <input
-            :value="pageSize"
-            type="number"
-            min="1"
-            :max="MAX_PAGE_SIZE"
-            step="1"
-            @change="handlePageSizeInput"
-            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-          />
-          <p class="mt-1 text-[11px] text-gray-400">
-            Máximo {{ MAX_PAGE_SIZE }} por consulta.
-          </p>
-        </div>
+          <label class="text-xs text-gray-500 block mb-1.5">Mostrando</label>
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-1.5 text-xs text-gray-400">
+              <input
+                :value="pageSize"
+                type="number"
+                min="1"
+                :max="MAX_PAGE_SIZE"
+                step="1"
+                @change="handlePageSizeInput"
+                class="w-12 border-0 border-b border-gray-200 bg-transparent px-0 py-0.5 text-center text-xs text-gray-500 focus:outline-none focus:ring-0 focus:border-blue-400"
+              />
+              <span>de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : '' }}</span>
+            </div>
 
-        <div class="mt-2 flex items-center justify-between gap-3">
-          <span class="text-xs text-gray-400">
-            {{ activeList.length }} de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : 's' }}
-          </span>
-          <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
-            Buscando...
-          </span>
+            <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
+              Buscando...
+            </span>
+          </div>
         </div>
 
         <div class="mt-2 flex items-center justify-between gap-2">
