@@ -16,16 +16,6 @@ export function useReports() {
 
   const searchQuery = ref('')
 
-  const originReport = ref(null)
-
-
-  // NEARBY STATE
-  const nearbyReports = ref([])
-
-  const nearbyLoading = ref(false)
-
-  const showingNearby = ref(false)
-
   // =========================
   // FETCH ALL REPORTS
   // =========================
@@ -38,15 +28,11 @@ export function useReports() {
 
     try {
 
-      const params = new URLSearchParams({ status: statusFilter.value })
-      const response = await fetch(`http://localhost:3000/reports/search?${params}`)
+      const response = await fetch(`http://localhost:3000/reports/search`)
       if (!response.ok) throw new Error('Error obteniendo reportes')
       const data = await response.json()
       if (!data.success) throw new Error(data.message)
-      reports.value   = data.reports
-      totalCount.value = data.total
-
-      
+      reports.value = data.reports
 
     } catch (err) {
 
@@ -58,86 +44,6 @@ export function useReports() {
 
       loading.value = false
     }
-  }
-
-  // =========================
-  // FETCH NEARBY REPORTS
-  // =========================
-
-  async function fetchNearbyReports(reportId) {
-
-    if (!reportId) return
-
-    originReport.value = selectedReport.value
-
-    nearbyLoading.value = true
-
-    error.value = null
-
-    try {
-
-      const response = await fetch(
-        `http://localhost:3000/reports/near/${reportId}`
-      )
-
-      if (!response.ok) {
-
-        throw new Error(
-          'Error obteniendo reportes cercanos'
-        )
-      }
-
-      const data = await response.json()
-
-      console.log(
-        'Nearby reports:',
-        data
-      )
-
-      // EXCLUDE CURRENT REPORT
-      nearbyReports.value = data.filter(
-        report =>
-          String(report._id) !== String(reportId)
-      )
-
-      showingNearby.value = true
-
-      // OPTIONAL:
-      // clear selected report
-      // if no nearby reports found
-
-      if (
-        nearbyReports.value.length === 0
-      ) {
-
-        console.warn(
-          'No se encontraron reportes cercanos'
-        )
-      }
-
-    } catch (err) {
-
-      console.error(err)
-
-      error.value = err.message
-
-    } finally {
-
-      nearbyLoading.value = false
-    }
-  }
-
-  // =========================
-  // CLEAR NEARBY
-  // =========================
-
-  function clearNearbyReports() {
-
-    showingNearby.value = false
-
-    nearbyReports.value = []
-
-    originReport.value = null
   }
 
   // =========================
@@ -213,39 +119,33 @@ function reportMatchesSearch(report, query) {
   )
 }
 
-// =========================
-// ACTIVE LIST
-// =========================
+  // =========================
+  // ACTIVE LIST
+  // =========================
 
-const activeReports = computed(() => {
+  const activeReports = computed(() => {
 
-  const source = showingNearby.value
-    ? nearbyReports.value
-    : reports.value
+    if (!searchQuery.value) {
 
-  if (!searchQuery.value) {
+      return reports.value
+    }
 
-    return source
-  }
-
-  const query = normalizeText(
-    searchQuery.value
-  )
-
-  return source.filter(report =>
-    reportMatchesSearch(
-      report,
-      query
+    const query = normalizeText(
+      searchQuery.value
     )
-  )
-})
 
-const activeLoading = computed(() => {
+    return reports.value.filter(report =>
+      reportMatchesSearch(
+        report,
+        query
+      )
+    )
+  })
 
-  return showingNearby.value
-    ? nearbyLoading.value
-    : loading.value
-})
+  const activeLoading = computed(() => {
+
+    return loading.value
+  })
 
   // =========================
   // RETURN
@@ -268,20 +168,7 @@ const activeLoading = computed(() => {
 
     selectReport,
 
-    originReport,
-
     clearSelectedReport,
-
-    // NEARBY
-    nearbyReports,
-
-    nearbyLoading,
-
-    showingNearby,
-
-    fetchNearbyReports,
-
-    clearNearbyReports,
 
     // ACTIVE
     activeReports,
