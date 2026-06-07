@@ -1,6 +1,6 @@
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { LayoutDashboard, AlertTriangle, GitBranch, Search, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle, Pin } from 'lucide-vue-next'
+import { ref, onMounted, nextTick, watch } from 'vue'
+import { LayoutDashboard, AlertTriangle, GitBranch, Search, SlidersHorizontal, RefreshCw, RotateCcw, AlertCircle, Pin, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 
 import AdminReportCard        from './AdminReportCard.vue'
 import IncidentStatsView      from './IncidentStatsView.vue'
@@ -20,12 +20,23 @@ const TABS = [
 
 const {
   groups, total, totalCount, loading, error, filters,
-  fetchReports,
+  pageSize, currentPage, totalPages, currentRangeStart, currentRangeEnd,
+  canGoPrevious, canGoNext, MAX_PAGE_SIZE,
+  fetchReports, resetPaginationAndFetch, setPageSize, goToPreviousPage, goToNextPage,
   updateReport,
   resetFilters,
 } = useAdminReports()
 
 onMounted(fetchReports)
+
+watch(currentPage, () => {
+  fetchReports()
+})
+
+function handlePageSizeInput(event) {
+  setPageSize(event.target.value)
+  resetPaginationAndFetch()
+}
 
 async function handlePatch({ id, update }) {
   const { ok, message } = await updateReport(id, update)
@@ -33,7 +44,7 @@ async function handlePatch({ id, update }) {
 }
 
 function applyFilters() {
-  fetchReports()
+  resetPaginationAndFetch()
 }
 
 function handleReset() {
@@ -43,12 +54,10 @@ function handleReset() {
 
 async function goToReport(reportId) {
   focusedReportId.value = String(reportId)
-  // Reset filters so the report is visible
   resetFilters()
   await fetchReports()
   activeTab.value = 'pendientes'
   await nextTick()
-  // Scroll to the highlighted card
   const el = document.getElementById('report-' + String(reportId))
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
@@ -89,9 +98,6 @@ async function goToReport(reportId) {
         <div class="flex items-center gap-2 mb-3">
           <SlidersHorizontal class="w-4 h-4 text-gray-400" />
           <span class="text-sm font-semibold text-gray-700">Filtros de la cola</span>
-          <span class="ml-auto text-xs text-gray-400">
-           Mostrando {{ groups.length }} de {{ total }} reporte{{ total !== 1 ? 's' : '' }}
-          </span>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -175,6 +181,52 @@ async function goToReport(reportId) {
             </button>
           </div>
 
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Mostrando</label>
+            <div class="flex items-center gap-1.5 text-xs text-gray-400 h-[42px]">
+              <input
+                :value="pageSize"
+                type="number"
+                min="1"
+                :max="MAX_PAGE_SIZE"
+                step="1"
+                @change="handlePageSizeInput"
+                class="w-12 border-0 border-b border-gray-200 bg-transparent px-0 py-0.5 text-center text-xs text-gray-500 focus:outline-none focus:ring-0 focus:border-blue-400"
+              />
+              <span>de {{ total }} reporte{{ total !== 1 ? 's' : '' }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mt-3 flex items-center justify-between gap-2">
+          <span class="text-xs text-gray-500">
+            {{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}
+          </span>
+
+          <div class="flex items-center gap-1">
+            <button
+              :disabled="!canGoPrevious"
+              @click="goToPreviousPage"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+            >
+              <ChevronLeft class="w-3.5 h-3.5" />
+              Anterior
+            </button>
+
+            <span class="px-2 text-xs text-gray-500">
+              {{ currentPage }} / {{ totalPages }}
+            </span>
+
+            <button
+              :disabled="!canGoNext"
+              @click="goToNextPage"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+            >
+              Siguiente
+              <ChevronRight class="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
