@@ -1,49 +1,149 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import {
-  Search, X, MapPin, Clock3, Tag, ShieldCheck,
+  Search, X, MapPin, Clock3, Tag,
   FileText, User, Copy, Check,
   ShieldAlert, Paperclip, Tags,
-  Hash
+  Hash, ChevronLeft, ChevronRight
 } from 'lucide-vue-next'
 
-// ─── State ───────────────────────────────────────────────────────────────────
-const reports        = ref([])
-const loading        = ref(false)
-const error          = ref(null)
-const searchQuery    = ref('')
-const selectedReport = ref(null)
-const copiedId       = ref(false)
-const statusFilter   = ref('active')   // ← pre-seteado en "activo"
-const totalCount     = ref(0)
-let searchTimeout    = null
+const CACHE_KEY = 'admin-incident-search-cache-v1'
+const DEFAULT_PAGE_SIZE = 100
+const MAX_PAGE_SIZE = 500
 
-// ─── Fetch reports with search ────────────────────────────────────────────────
-async function fetchReports() {
+// ─── State ───────────────────────────────────────────────────────────────────
+const reports = ref([])
+const loading = ref(false)
+const error = ref(null)
+const searchQuery = ref('')
+const selectedReport = ref(null)
+const copiedId = ref(false)
+const statusFilter = ref('active')
+const totalCount = ref(0)
+const pageSize = ref(DEFAULT_PAGE_SIZE)
+const currentPage = ref(1)
+let searchTimeout = null
+
+function normalizePageSize(value) {
+  const parsed = parseInt(value, 10)
+  if (Number.isNaN(parsed)) return DEFAULT_PAGE_SIZE
+  return Math.min(Math.max(parsed, 1), MAX_PAGE_SIZE)
+}
+
+function getCacheStore() {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveCacheStore(store) {
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(store))
+  } catch (err) {
+    console.warn('No se pudo persistir la cache de reportes', err)
+  }
+}
+
+function getCacheScopeKey() {
+  return JSON.stringify({
+    status: statusFilter.value || '',
+    q: searchQuery.value.trim(),
+    limit: pageSize.value,
+  })
+}
+
+function getCachedPage(scopeKey, page) {
+  const store = getCacheStore()
+  return store[scopeKey]?.pages?.[page] ?? null
+}
+
+function setCachedPage(scopeKey, page, payload) {
+  const store = getCacheStore()
+  const scope = store[scopeKey] ?? { total: 0, pages: {}, updatedAt: null }
+  scope.total = payload.total
+  scope.pages[page] = payload.reports
+  scope.updatedAt = Date.now()
+  store[scopeKey] = scope
+  saveCacheStore(store)
+}
+
+function syncFromCache(scopeKey, page) {
+  const store = getCacheStore()
+  const scope = store[scopeKey]
+
+  if (!scope) return false
+
+  totalCount.value = scope.total ?? 0
+
+  if (scope.pages?.[page]) {
+    reports.value = scope.pages[page]
+    return true
+  }
+
+  return false
+}
+
+const totalPages = computed(() => {
+  if (!totalCount.value) return 1
+  return Math.max(1, Math.ceil(totalCount.value / pageSize.value))
+})
+
+const currentRangeStart = computed(() => {
+  if (!totalCount.value) return 0
+  return (currentPage.value - 1) * pageSize.value + 1
+})
+
+const currentRangeEnd = computed(() => {
+  if (!totalCount.value) return 0
+  return Math.min(currentPage.value * pageSize.value, totalCount.value)
+})
+
+const canGoPrevious = computed(() => currentPage.value > 1)
+const canGoNext = computed(() => currentPage.value < totalPages.value)
+
+// ─── Fetch reports with search + pagination + cache ──────────────────────────
+async function fetchReports({ force = false } = {}) {
   loading.value = true
-  error.value   = null
+  error.value = null
+
+  const scopeKey = getCacheScopeKey()
+  const cachedPage = !force ? getCachedPage(scopeKey, currentPage.value) : null
+
+  if (cachedPage) {
+    syncFromCache(scopeKey, currentPage.value)
+    loading.value = false
+    return
+  }
+
   try {
     const params = new URLSearchParams()
-    
-    // Agregar filtro de estado
+
     if (statusFilter.value) {
       params.append('status', statusFilter.value)
     }
-    
-    // Agregar búsqueda de texto
+
     if (searchQuery.value.trim()) {
       params.append('q', searchQuery.value.trim())
     }
-    
-    // Sin límite para búsqueda, pero con límite razonable
-    params.append('limit', '500')
-    
-    const res  = await fetch(`http://localhost:3000/reports/search?${params}`)
+
+    params.append('limit', String(pageSize.value))
+    params.append('skip', String((currentPage.value - 1) * pageSize.value))
+
+    const res = await fetch(`http://localhost:3000/reports/search?${params}`)
     if (!res.ok) throw new Error('Error obteniendo reportes')
+
     const data = await res.json()
     if (!data.success) throw new Error(data.message)
+
     reports.value = data.reports
     totalCount.value = data.total
+    setCachedPage(scopeKey, currentPage.value, {
+      total: data.total,
+      reports: data.reports,
+    })
   } catch (e) {
     error.value = e.message
   } finally {
@@ -51,24 +151,63 @@ async function fetchReports() {
   }
 }
 
-onMounted(fetchReports)
+function resetPaginationAndFetch() {
+  currentPage.value = 1
+  const scopeKey = getCacheScopeKey()
+  if (syncFromCache(scopeKey, currentPage.value)) return
+  fetchReports()
+}
 
-// ─── Watch para búsqueda con debounce ─────────────────────────────────────────
-watch(searchQuery, () => {
-  if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    fetchReports()
-  }, 300) // 300ms de debounce
-})
+function goToPreviousPage() {
+  if (!canGoPrevious.value) return
+  currentPage.value -= 1
+}
 
-// ─── Watch para cambio de estado ──────────────────────────────────────────────
-watch(statusFilter, () => {
+function goToNextPage() {
+  if (!canGoNext.value) return
+  currentPage.value += 1
+}
+
+function handlePageSizeInput(event) {
+  pageSize.value = normalizePageSize(event.target.value)
+}
+
+onMounted(() => {
+  pageSize.value = normalizePageSize(pageSize.value)
+  const scopeKey = getCacheScopeKey()
+  if (syncFromCache(scopeKey, currentPage.value)) return
   fetchReports()
 })
 
-// ─── Lista activa (ahora solo muestra lo que viene del backend) ───────────────
-const activeList = computed(() => reports.value)
+// ─── Watchers ────────────────────────────────────────────────────────────────
+watch(searchQuery, () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    resetPaginationAndFetch()
+  }, 300)
+})
 
+watch(statusFilter, () => {
+  resetPaginationAndFetch()
+})
+
+watch(pageSize, (newValue, oldValue) => {
+  const normalized = normalizePageSize(newValue)
+  if (normalized !== newValue) {
+    pageSize.value = normalized
+    return
+  }
+
+  if (normalized === oldValue) return
+  resetPaginationAndFetch()
+})
+
+watch(currentPage, () => {
+  fetchReports()
+})
+
+// ─── Lista activa ────────────────────────────────────────────────────────────
+const activeList = computed(() => reports.value)
 const activeLoading = computed(() => loading.value)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -92,11 +231,11 @@ function tagEntries(tags) {
 
 function statusColor(s) {
   const m = {
-    active:          'bg-red-100 text-red-700',
-    resolved:        'bg-green-100 text-green-700',
-    archived:        'bg-gray-100 text-gray-600',
+    active: 'bg-red-100 text-red-700',
+    resolved: 'bg-green-100 text-green-700',
+    archived: 'bg-gray-100 text-gray-600',
     en_verificacion: 'bg-yellow-100 text-yellow-700',
-    asignado:        'bg-blue-100 text-blue-700',
+    asignado: 'bg-blue-100 text-blue-700',
   }
   return m[s] || 'bg-gray-100 text-gray-600'
 }
@@ -104,9 +243,9 @@ function statusColor(s) {
 function criticidadColor(c) {
   const m = {
     critica: 'bg-red-600 text-white',
-    alta:    'bg-orange-100 text-orange-700',
-    media:   'bg-yellow-100 text-yellow-700',
-    baja:    'bg-green-100 text-green-700',
+    alta: 'bg-orange-100 text-orange-700',
+    media: 'bg-yellow-100 text-yellow-700',
+    baja: 'bg-green-100 text-green-700',
   }
   return m[c] || ''
 }
@@ -114,9 +253,9 @@ function criticidadColor(c) {
 function validezColor(v) {
   const m = {
     pendiente: 'bg-gray-100 text-gray-500',
-    valido:    'bg-green-100 text-green-700',
-    falso:     'bg-red-100 text-red-700',
-    dudoso:    'bg-yellow-100 text-yellow-700',
+    valido: 'bg-green-100 text-green-700',
+    falso: 'bg-red-100 text-red-700',
+    dudoso: 'bg-yellow-100 text-yellow-700',
   }
   return m[v] || 'bg-gray-100 text-gray-500'
 }
@@ -139,35 +278,38 @@ async function copyId(id) {
 // ─── Update report field ──────────────────────────────────────────────────────
 async function updateReportField(field, value) {
   if (!selectedReport.value?._id) return
-  
+
   try {
     const response = await fetch(`http://localhost:3000/reports/${selectedReport.value._id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value })
     })
-    
+
     if (!response.ok) {
       throw new Error('Error al actualizar el reporte')
     }
-    
+
     const data = await response.json()
-    
+
     if (!data.success) {
       throw new Error(data.message || 'Error al actualizar')
     }
-    
-    // Update local report object
+
     if (selectedReport.value) {
       selectedReport.value[field] = value
     }
-    
-    // Also update in the reports list
+
     const reportIndex = reports.value.findIndex(r => r._id === selectedReport.value._id)
     if (reportIndex !== -1) {
       reports.value[reportIndex][field] = value
     }
-    
+
+    const scopeKey = getCacheScopeKey()
+    setCachedPage(scopeKey, currentPage.value, {
+      total: totalCount.value,
+      reports: reports.value,
+    })
   } catch (err) {
     console.error('Error updating report:', err)
     alert(`Error al actualizar: ${err.message}`)
@@ -215,13 +357,59 @@ async function updateReportField(field, value) {
           </select>
         </div>
 
-        <div class="mt-2 flex items-center justify-between">
+        <div class="mt-2.5">
+          <label class="text-xs text-gray-500 block mb-1.5">Reportes por página</label>
+          <input
+            :value="pageSize"
+            type="number"
+            min="1"
+            :max="MAX_PAGE_SIZE"
+            step="1"
+            @change="handlePageSizeInput"
+            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+          />
+          <p class="mt-1 text-[11px] text-gray-400">
+            Máximo {{ MAX_PAGE_SIZE }} por consulta.
+          </p>
+        </div>
+
+        <div class="mt-2 flex items-center justify-between gap-3">
           <span class="text-xs text-gray-400">
-            {{ activeList.length }} de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : '' }}
+            {{ activeList.length }} de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : 's' }}
           </span>
           <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
             Buscando...
           </span>
+        </div>
+
+        <div class="mt-2 flex items-center justify-between gap-2">
+          <span class="text-xs text-gray-500">
+            {{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}
+          </span>
+
+          <div class="flex items-center gap-1">
+            <button
+              :disabled="!canGoPrevious"
+              @click="goToPreviousPage"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+            >
+              <ChevronLeft class="w-3.5 h-3.5" />
+              Anterior
+            </button>
+
+            <span class="px-2 text-xs text-gray-500">
+              {{ currentPage }} / {{ totalPages }}
+            </span>
+
+            <button
+              :disabled="!canGoNext"
+              @click="goToNextPage"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+            >
+              Siguiente
+              <ChevronRight class="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
