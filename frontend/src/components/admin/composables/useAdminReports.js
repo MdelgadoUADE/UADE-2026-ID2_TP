@@ -21,6 +21,8 @@ export function useAdminReports() {
     tag_value: '',
     criticidad: '',
     validez: '',
+    trust_score_min: '',
+    trust_score_max: '',
     sort: 'reciente',
   })
 
@@ -217,6 +219,8 @@ export function useAdminReports() {
       tag_value: '',
       criticidad: '',
       validez: '',
+      trust_score_min: '',
+      trust_score_max: '',
       sort: 'reciente',
     })
     pageSize.value = DEFAULT_PAGE_SIZE

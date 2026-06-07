@@ -64,7 +64,24 @@ const ReportSchema = new mongoose.Schema(
 
     related_reports: [String],
 
-    trust_score: Number
+    trust_score: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: null
+    },
+
+    trust_score_metadata: {
+      calculated_at: Date,
+      version: String,
+      breakdown: {
+        user_authentication: Number,
+        report_completeness: Number,
+        user_history: Number,
+        related_reports: Number,
+        time_consistency: Number
+      }
+    }
   },
   {
     timestamps: true
@@ -74,5 +91,10 @@ const ReportSchema = new mongoose.Schema(
 ReportSchema.index({
   report_location: '2dsphere'
 });
+
+// Índices para optimizar consultas de trust score
+ReportSchema.index({ trust_score: 1 });
+ReportSchema.index({ 'user.user_id': 1, timestamp: -1 });
+ReportSchema.index({ validez: 1 });
 
 module.exports = mongoose.model('Report', ReportSchema);

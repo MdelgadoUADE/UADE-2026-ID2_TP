@@ -150,6 +150,18 @@ async function goToReport(reportId) {
           </div>
 
           <div>
+            <label class="text-xs text-gray-500 block mb-1">Trust Score Mín</label>
+            <input v-model="filters.trust_score_min" type="number" min="0" max="1" step="0.01" placeholder="0.00"
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Trust Score Máx</label>
+            <input v-model="filters.trust_score_max" type="number" min="0" max="1" step="0.01" placeholder="1.00"
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+          </div>
+
+          <div>
             <label class="text-xs text-gray-500 block mb-1">Tag (clave)</label>
             <input v-model="filters.tag_key" type="text" placeholder="Ej: color_vehiculo"
               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />

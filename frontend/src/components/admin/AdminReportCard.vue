@@ -4,6 +4,7 @@ import {
   MapPin, Clock3, Tags, UserX, Link2,
   ChevronDown, ChevronUp, ShieldAlert, Hash
 } from 'lucide-vue-next'
+import TrustScoreBadge from '../TrustScoreBadge.vue'
 
 const props = defineProps({
   report:      { type: Object,  required: true },
@@ -115,9 +116,15 @@ function patch(field, value) {
 
       <!-- Right: trust score + badges estado actual -->
       <div class="flex flex-col items-end gap-1.5 shrink-0">
-        <div class="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+        <TrustScoreBadge
+          v-if="report.trust_score !== null && report.trust_score !== undefined"
+          :trust-score="report.trust_score"
+          size="small"
+          :show-label="false"
+        />
+        <div v-else class="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
           <ShieldAlert class="w-3 h-3" />
-          {{ report.trust_score ?? '—' }}
+          Sin calcular
         </div>
         <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor]">
           {{ STATUS_LABELS[report.status] ?? report.status }}

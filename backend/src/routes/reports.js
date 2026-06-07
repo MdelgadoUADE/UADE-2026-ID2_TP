@@ -3,11 +3,12 @@ const express = require("express");
 const router = express.Router();
 
 const Report = require("../models/Report");
+const { calculateTrustScore } = require("../utils/trustScore");
 
 // =========================
 // GET /reports/search — Búsqueda pública con filtros y paginación
 // Query params: status (default: 'active'), limit (default: 100), skip (default: 0)
-//               tag_key, tag_value, sort (reciente|antiguo)
+//               tag_key, tag_value, sort (reciente|antiguo), trust_score_min, trust_score_max
 // =========================
 router.get("/search", async (req, res) => {
   try {
@@ -17,6 +18,8 @@ router.get("/search", async (req, res) => {
       skip   = "0",
       tag_key,
       tag_value,
+      trust_score_min,
+      trust_score_max,
       sort = "reciente",
       q = "", // Parámetro de búsqueda de texto
     } = req.query;
@@ -29,6 +32,17 @@ router.get("/search", async (req, res) => {
       filter[`tags.${tag_key}`] = tag_value;
     } else if (tag_key) {
       filter[`tags.${tag_key}`] = { $exists: true };
+    }
+
+    // Filtro por trust score range
+    if (trust_score_min !== undefined || trust_score_max !== undefined) {
+      filter.trust_score = {};
+      if (trust_score_min !== undefined) {
+        filter.trust_score.$gte = parseFloat(trust_score_min);
+      }
+      if (trust_score_max !== undefined) {
+        filter.trust_score.$lte = parseFloat(trust_score_max);
+      }
     }
 
     // Búsqueda de texto en múltiples campos
@@ -94,6 +108,17 @@ router.post("/", async (req, res) => {
 
     const report = new Report(req.body);
     const savedReport = await report.save();
+
+    // Calcular trust score automáticamente
+    try {
+      const { score, metadata } = await calculateTrustScore(savedReport);
+      savedReport.trust_score = score;
+      savedReport.trust_score_metadata = metadata;
+      await savedReport.save();
+    } catch (trustScoreError) {
+      console.error('Error calculating trust score:', trustScoreError);
+      // No fallar la creación del reporte si falla el trust score
+    }
 
     res.status(201).json({
       success: true,
@@ -177,7 +202,7 @@ router.get("/admin/stats", async (req, res) => {
 
 // =========================
 // GET /reports/admin — Cola de reportes para el dashboard
-// Filtros: status, is_anonymous, tag_key, tag_value, sort (reciente|antiguo)
+// Filtros: status, is_anonymous, tag_key, tag_value, sort (reciente|antiguo), trust_score_min, trust_score_max
 // RF_23: incluye agrupación de relacionados
 // =========================
 router.get("/admin", async (req, res) => {
@@ -189,6 +214,8 @@ router.get("/admin", async (req, res) => {
       tag_value,
       criticidad,
       validez,
+      trust_score_min,
+      trust_score_max,
       limit = "100",
       skip  = "0",
       sort = "reciente",
@@ -207,6 +234,17 @@ router.get("/admin", async (req, res) => {
     if (criticidad) filter.criticidad = criticidad;
 
     if (validez) filter.validez = validez;
+
+    // Filtro por trust score range
+    if (trust_score_min !== undefined || trust_score_max !== undefined) {
+      filter.trust_score = {};
+      if (trust_score_min !== undefined) {
+        filter.trust_score.$gte = parseFloat(trust_score_min);
+      }
+      if (trust_score_max !== undefined) {
+        filter.trust_score.$lte = parseFloat(trust_score_max);
+      }
+    }
 
     // Filtro por tag key/value: tags es Mixed, usamos dot notation
     if (tag_key && tag_value) {
@@ -518,6 +556,102 @@ router.get("/near/:id", async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Error fetching nearby reports" });
   }
+// =========================
+// PATCH /reports/:id/trust-score — Recalcular trust score de un reporte
+// =========================
+router.patch("/:id/trust-score", async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Report not found" 
+      });
+    }
+
+    // Calcular nuevo trust score
+    const { score, metadata } = await calculateTrustScore(report);
+    
+    report.trust_score = score;
+    report.trust_score_metadata = metadata;
+    await report.save();
+
+    res.json({
+      success: true,
+      report_id: report._id,
+      trust_score: score,
+      metadata
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error recalculating trust score" 
+    });
+  }
+});
+
+// =========================
+// POST /reports/admin/recalculate-trust-scores — Recalcular trust scores en lote
+// Query params: status, validez, limit (default 1000)
+// =========================
+router.post("/admin/recalculate-trust-scores", async (req, res) => {
+  try {
+    const { filter = {}, limit = 1000 } = req.body;
+    
+    // Construir filtro
+    const query = {};
+    if (filter.status) query.status = filter.status;
+    if (filter.validez) query.validez = filter.validez;
+    if (filter.trust_score === null) query.trust_score = null;
+
+    const limitNum = Math.min(parseInt(limit, 10) || 1000, 5000); // Máximo 5000
+
+    // Obtener reportes a procesar
+    const reports = await Report.find(query).limit(limitNum);
+
+    let processed = 0;
+    let updated = 0;
+    let failed = 0;
+    let totalScore = 0;
+
+    // Procesar cada reporte
+    for (const report of reports) {
+      try {
+        const { score, metadata } = await calculateTrustScore(report);
+        
+        report.trust_score = score;
+        report.trust_score_metadata = metadata;
+        await report.save();
+        
+        updated++;
+        totalScore += score;
+      } catch (error) {
+        console.error(`Error processing report ${report._id}:`, error);
+        failed++;
+      }
+      processed++;
+    }
+
+    const averageScore = updated > 0 ? totalScore / updated : 0;
+
+    res.json({
+      success: true,
+      processed,
+      updated,
+      failed,
+      average_score: Math.floor(averageScore * 100) / 100
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error recalculating trust scores" 
+    });
+  }
+});
+
 });
 
 module.exports = router;

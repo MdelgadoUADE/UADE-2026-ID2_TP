@@ -1,4 +1,5 @@
 <script setup>
+import TrustScoreBadge from './TrustScoreBadge.vue'
 
 defineProps({
 
@@ -205,16 +206,15 @@ function getStatusColor(status) {
       >
 
         <p
-          class="text-sm text-gray-500"
+          class="text-sm text-gray-500 mb-2"
         >
           Trust Score
         </p>
 
-        <p
-          class="text-2xl font-bold"
-        >
-          {{ report.trust_score }}
-        </p>
+        <TrustScoreBadge
+          :trust-score="report.trust_score"
+          size="large"
+        />
 
       </div>
 
