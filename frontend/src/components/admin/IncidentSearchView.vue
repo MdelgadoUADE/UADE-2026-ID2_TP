@@ -126,7 +126,7 @@ async function updateReportField(field, value) {
   if (!selectedReport.value?._id) return
   
   try {
-    const response = await fetch(`http://localhost:3000/reports/${selectedReport.value._id}`, {
+    const response = await fetch(`http://localhost:3000/reports/${selectedReport.value._id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value })
