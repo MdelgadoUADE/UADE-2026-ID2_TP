@@ -8,10 +8,11 @@ export function useAdminReports() {
   const total     = ref(0)
   const loading   = ref(false)
   const error     = ref(null)
+  const totalCount = ref(0)
 
   // Filtros reactivos — por defecto: más reciente primero
   const filters = reactive({
-    status:       '',
+    status:       'active', 
     is_anonymous: '',
     tag_key:      '',
     tag_value:    '',
@@ -39,6 +40,7 @@ export function useAdminReports() {
 
       groups.value = data.groups
       total.value  = data.total
+      totalCount.value = data.total
 
     } catch (err) {
       console.error(err)
@@ -84,15 +86,14 @@ export function useAdminReports() {
 
   function resetFilters() {
     Object.assign(filters, {
-      status: '', is_anonymous: '', tag_key: '',
+      status: 'active', is_anonymous: '', tag_key: '',
       tag_value: '', criticidad: '', validez: '', sort: 'reciente',
     })
   }
 
   // ─── Return ───────────────────────────────────────────
   return {
-    groups, total, loading, error,
-    filters,
+    groups, total, totalCount, loading, error, filters,
     fetchReports,
     updateReport,
     resetFilters,
