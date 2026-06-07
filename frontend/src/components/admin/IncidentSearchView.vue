@@ -2,12 +2,10 @@
 import { ref, computed, onMounted } from 'vue'
 import {
   Search, X, MapPin, Clock3, Tag, ShieldCheck,
-  FileText, User, Copy, Check, ChevronRight,
-  ShieldAlert, Paperclip, Tags, Radar, ArrowLeft,
-  Hash, Settings
+  FileText, User, Copy, Check,
+  ShieldAlert, Paperclip, Tags,
+  Hash
 } from 'lucide-vue-next'
-
-const emit = defineEmits(['manage-report'])
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const reports        = ref([])
@@ -18,12 +16,6 @@ const selectedReport = ref(null)
 const copiedId       = ref(false)
 const statusFilter   = ref('active')   // ← pre-seteado en "activo"
 const totalCount     = ref(0)
-
-// ─── Nearby state ─────────────────────────────────────────────────────────────
-const showingNearby   = ref(false)
-const nearbyReports   = ref([])
-const nearbyLoading   = ref(false)
-const originReport    = ref(null)
 
 // ─── Fetch all reports ────────────────────────────────────────────────────────
 async function fetchReports() {
@@ -46,36 +38,11 @@ async function fetchReports() {
 
 onMounted(fetchReports)
 
-// ─── Fetch nearby ─────────────────────────────────────────────────────────────
-async function fetchNearby(reportId) {
-  originReport.value  = selectedReport.value
-  nearbyLoading.value = true
-  error.value         = null
-  try {
-    const res  = await fetch(`http://localhost:3000/reports/near/${reportId}`)
-    if (!res.ok) throw new Error('Error obteniendo reportes cercanos')
-    const data = await res.json()
-    nearbyReports.value = data.filter(r => String(r._id) !== String(reportId))
-    showingNearby.value = true
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    nearbyLoading.value = false
-  }
-}
-
-function clearNearby() {
-  showingNearby.value  = false
-  nearbyReports.value  = []
-  originReport.value   = null
-}
-
 // ─── Search filter ────────────────────────────────────────────────────────────
 const activeList = computed(() => {
-  const source = showingNearby.value ? nearbyReports.value : reports.value
-  if (!searchQuery.value.trim()) return source
+  if (!searchQuery.value.trim()) return reports.value
   const q = searchQuery.value.toLowerCase()
-  return source.filter(r => {
+  return reports.value.filter(r => {
     return (
       (r.user?.username  || '').toLowerCase().includes(q) ||
       (r.user?.email     || '').toLowerCase().includes(q) ||
@@ -87,7 +54,7 @@ const activeList = computed(() => {
   })
 })
 
-const activeLoading = computed(() => showingNearby.value ? nearbyLoading.value : loading.value)
+const activeLoading = computed(() => loading.value)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatDate(d) {
@@ -129,6 +96,16 @@ function criticidadColor(c) {
   return m[c] || ''
 }
 
+function validezColor(v) {
+  const m = {
+    pendiente: 'bg-gray-100 text-gray-500',
+    valido:    'bg-green-100 text-green-700',
+    falso:     'bg-red-100 text-red-700',
+    dudoso:    'bg-yellow-100 text-yellow-700',
+  }
+  return m[v] || 'bg-gray-100 text-gray-500'
+}
+
 function selectReport(report) {
   selectedReport.value = report
 }
@@ -144,8 +121,42 @@ async function copyId(id) {
   }
 }
 
-function manageReport() {
-  emit('manage-report', selectedReport.value._id)
+// ─── Update report field ──────────────────────────────────────────────────────
+async function updateReportField(field, value) {
+  if (!selectedReport.value?._id) return
+  
+  try {
+    const response = await fetch(`http://localhost:3000/reports/${selectedReport.value._id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Error al actualizar el reporte')
+    }
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Error al actualizar')
+    }
+    
+    // Update local report object
+    if (selectedReport.value) {
+      selectedReport.value[field] = value
+    }
+    
+    // Also update in the reports list
+    const reportIndex = reports.value.findIndex(r => r._id === selectedReport.value._id)
+    if (reportIndex !== -1) {
+      reports.value[reportIndex][field] = value
+    }
+    
+  } catch (err) {
+    console.error('Error updating report:', err)
+    alert(`Error al actualizar: ${err.message}`)
+  }
 }
 </script>
 
@@ -173,18 +184,7 @@ function manageReport() {
           </button>
         </div>
 
-        <!-- Info de contexto cuando está en nearby mode -->
-        <div v-if="showingNearby" class="mt-2 flex items-center justify-between">
-          <span class="text-xs text-blue-600 font-medium">
-            Cercanos a {{ originReport?.user?.username || 'reporte' }}
-          </span>
-          <button @click="clearNearby"
-            class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors">
-            <ArrowLeft class="w-3 h-3" />
-            Volver
-          </button>
-        </div>
-        <div v-else class="mt-1.5 flex items-center justify-between">
+        <div class="mt-1.5 flex items-center justify-between">
           <span class="text-xs text-gray-400">
             {{ activeList.length }} reporte{{ activeList.length !== 1 ? 's' : '' }}
           </span>
@@ -309,26 +309,6 @@ function manageReport() {
               </div>
             </div>
 
-            <!-- Botones de acción -->
-            <div class="flex items-center gap-2 shrink-0">
-              <!-- Botón Gestionar -->
-              <button
-                @click="manageReport"
-                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium"
-              >
-                <Settings class="w-4 h-4" />
-                <span class="hidden sm:inline">Gestionar</span>
-              </button>
-
-              <!-- Botón Cercanos -->
-              <button
-                @click="fetchNearby(selectedReport._id)"
-                class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-xl transition-colors font-medium"
-              >
-                <Radar class="w-4 h-4" />
-                <span class="hidden sm:inline">Cercanos</span>
-              </button>
-            </div>
 
           </div>
 
@@ -433,11 +413,74 @@ function manageReport() {
             </div>
           </div>
 
-          <!-- Validez -->
-          <div v-if="selectedReport.validez" class="flex items-center gap-2 text-xs text-gray-500">
-            <ShieldCheck class="w-3.5 h-3.5 text-gray-400" />
-            Validez:
-            <span class="font-semibold text-gray-700 capitalize">{{ selectedReport.validez }}</span>
+          <!-- MANAGEMENT FIELDS -->
+          <div class="border-t border-gray-200 pt-5">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">
+              Gestión del Reporte
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              
+              <!-- Estado -->
+              <div>
+                <label class="text-xs font-medium text-gray-600 block mb-1.5">
+                  Estado
+                </label>
+                <select
+                  :value="selectedReport.status"
+                  @change="updateReportField('status', $event.target.value)"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="active">Activo</option>
+                  <option value="en_verificacion">En verificación</option>
+                  <option value="asignado">Asignado</option>
+                  <option value="resolved">Resuelto</option>
+                  <option value="archived">Archivado</option>
+                </select>
+              </div>
+
+              <!-- Criticidad -->
+              <div>
+                <label class="text-xs font-medium text-gray-600 block mb-1.5">
+                  Criticidad
+                </label>
+                <select
+                  :value="selectedReport.criticidad ?? ''"
+                  @change="updateReportField('criticidad', $event.target.value || null)"
+                  :class="[
+                    'w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                    criticidadColor(selectedReport.criticidad)
+                  ]"
+                >
+                  <option value="">— sin clasificar —</option>
+                  <option value="baja">Baja</option>
+                  <option value="media">Media</option>
+                  <option value="alta">Alta</option>
+                  <option value="critica">Crítica</option>
+                </select>
+              </div>
+
+              <!-- Validez -->
+              <div>
+                <label class="text-xs font-medium text-gray-600 block mb-1.5">
+                  Validez
+                </label>
+                <select
+                  :value="selectedReport.validez ?? 'pendiente'"
+                  @change="updateReportField('validez', $event.target.value)"
+                  :class="[
+                    'w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                    validezColor(selectedReport.validez)
+                  ]"
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="valido">Válido</option>
+                  <option value="falso">Falso</option>
+                  <option value="dudoso">Dudoso</option>
+                </select>
+              </div>
+
+            </div>
           </div>
 
         </div>
