@@ -98,7 +98,7 @@ async function goToReport(reportId) {
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Estado</label>
-            + <select v-model="filters.status"
+             <select v-model="filters.status"
               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="active">Activo</option>
               <option value="en_verificacion">En verificación</option>
