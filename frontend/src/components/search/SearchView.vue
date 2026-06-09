@@ -54,6 +54,8 @@ onMounted(() => {
 
       <ReportSearchBar
         v-model="searchQuery"
+        :loading="activeLoading"
+        @refresh="fetchReports"
       />
 
       <div

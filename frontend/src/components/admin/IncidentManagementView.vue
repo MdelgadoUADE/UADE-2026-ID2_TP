@@ -22,7 +22,7 @@ const {
   groups, total, totalCount, loading, error, filters,
   pageSize, currentPage, totalPages, currentRangeStart, currentRangeEnd,
   canGoPrevious, canGoNext, MAX_PAGE_SIZE,
-  fetchReports, resetPaginationAndFetch, setPageSize, goToPreviousPage, goToNextPage,
+  fetchReports, resetPaginationAndFetch, forceRefresh, setPageSize, goToPreviousPage, goToNextPage,
   updateReport,
   resetFilters,
 } = useAdminReports()
@@ -44,7 +44,7 @@ async function handlePatch({ id, update }) {
 }
 
 function applyFilters() {
-  resetPaginationAndFetch()
+  forceRefresh()
 }
 
 function handleReset() {
@@ -183,12 +183,24 @@ async function goToReport(reportId) {
           </div>
 
           <div class="flex items-end gap-2">
-            <button @click="applyFilters"
-              class="flex-1 flex items-center justify-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-2 transition">
-              <RefreshCw class="w-3.5 h-3.5" /> Aplicar
+            <button
+              @click="applyFilters"
+              :disabled="loading"
+              class="flex-1 flex items-center justify-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Actualizar reportes desde el servidor"
+            >
+              <RefreshCw
+                class="w-3.5 h-3.5"
+                :class="{ 'animate-spin': loading }"
+              />
+              Aplicar
             </button>
-            <button @click="handleReset"
-              class="flex items-center justify-center gap-1 text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg px-3 py-2 transition">
+            <button
+              @click="handleReset"
+              :disabled="loading"
+              class="flex items-center justify-center gap-1 text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Restablecer filtros"
+            >
               <RotateCcw class="w-3.5 h-3.5" />
             </button>
           </div>

@@ -157,6 +157,11 @@ export function useAdminReports() {
     fetchReports()
   }
 
+  function forceRefresh() {
+    currentPage.value = 1
+    fetchReports({ force: true })
+  }
+
   function setPageSize(value) {
     pageSize.value = normalizePageSize(value)
   }
@@ -244,6 +249,7 @@ export function useAdminReports() {
     MAX_PAGE_SIZE,
     fetchReports,
     resetPaginationAndFetch,
+    forceRefresh,
     setPageSize,
     goToPreviousPage,
     goToNextPage,

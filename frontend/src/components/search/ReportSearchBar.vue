@@ -4,19 +4,25 @@ import { ref, watch } from 'vue'
 
 import {
   Search,
-  X
+  X,
+  RefreshCw
 } from 'lucide-vue-next'
 
 const props = defineProps({
   modelValue: {
     type: String,
     default: ''
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits([
   'update:modelValue',
-  'search'
+  'search',
+  'refresh'
 ])
 
 const localValue = ref(props.modelValue)
@@ -39,6 +45,11 @@ function updateValue(value) {
 function clearSearch() {
 
   updateValue('')
+}
+
+function handleRefresh() {
+
+  emit('refresh')
 }
 
 </script>
@@ -121,6 +132,31 @@ function clearSearch() {
         </button>
 
       </div>
+
+      <!-- REFRESH BUTTON -->
+      <button
+        @click="handleRefresh"
+        :disabled="loading"
+        class="
+          flex
+          items-center
+          justify-center
+          w-10
+          h-10
+          rounded-xl
+          bg-gray-100
+          hover:bg-gray-200
+          disabled:opacity-50
+          disabled:cursor-not-allowed
+          transition-colors
+        "
+        title="Actualizar reportes"
+      >
+        <RefreshCw
+          class="w-5 h-5 text-gray-700"
+          :class="{ 'animate-spin': loading }"
+        />
+      </button>
 
     </div>
 
