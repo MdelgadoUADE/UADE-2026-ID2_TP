@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, inject, watch } from "vue";
 import { Car, User, Building2, MapPin } from 'lucide-vue-next'
 import { TAG_INPUT_CONFIG, DEFAULT_TAG_CONFIG } from '../config/tagInputConfig.js'
+import NotificationModal from './NotificationModal.vue'
 
 
 
@@ -47,6 +48,27 @@ const isSubmitting = ref(false);
 
 const isSelectDisabled = computed(() => useCustomTag.value);
 
+// Notification modal state
+const notification = ref({
+  visible: false,
+  type: 'success',
+  title: '',
+  message: ''
+})
+
+function showNotification(type, title, message) {
+  notification.value = {
+    visible: true,
+    type,
+    title,
+    message
+  }
+}
+
+function closeNotification() {
+  notification.value.visible = false
+}
+
 // Computed que devuelve la config del tag actualmente seleccionado
 const currentTagConfig = computed(() => {
   if (!selectedTag.value) return null
@@ -61,7 +83,7 @@ const isTagAlreadyAdded = computed(() =>
 function addTag() {
   if (!selectedTag.value) return
   if (isTagAlreadyAdded.value) {
-    alert('Este tag ya fue agregado')
+    showNotification('warning', 'Tag duplicado', 'Este tag ya fue agregado')
     return
   }
     addedTags.value.push({
@@ -118,7 +140,7 @@ async function handleSubmit() {
     /* Creando tag si no existe */
     if (useCustomTag.value) {
       if (!customTag.value.trim()) {
-        alert("Debes ingresar un nombre de tag");
+        showNotification('warning', 'Campo requerido', 'Debes ingresar un nombre de tag')
         return;
       }
 
@@ -175,26 +197,30 @@ async function handleSubmit() {
       throw new Error("No se pudo crear el reporte");
     }
 
-    alert("Reporte enviado");
+    showNotification('success', '¡Reporte enviado!', 'Tu reporte ha sido creado exitosamente')
 
-    emit("close");
-
-    /*
-      Reset form
-    */
-    selectedTag.value = "";
-    customTag.value = "";
-    customDescription.value = "";
-    notes.value = "";
-    useCustomTag.value = false;
-    selectedTagValue.value = '';
-    addedTags.value = []
+    // Wait a bit before closing to show the notification
+    setTimeout(() => {
+      emit("close");
+      
+      /*
+        Reset form
+      */
+      selectedTag.value = "";
+      customTag.value = "";
+      customDescription.value = "";
+      notes.value = "";
+      useCustomTag.value = false;
+      selectedTagValue.value = '';
+      addedTags.value = []
+      selectedCategory.value = ''
+    }, 2000)
 
   
   } catch (error) {
     console.error(error);
 
-    alert("Ocurrió un error enviando el reporte");
+    showNotification('error', 'Error', 'Ocurrió un error enviando el reporte. Por favor, intenta nuevamente.')
   } finally {
     isSubmitting.value = false;
   }
@@ -382,6 +408,15 @@ async function handleSubmit() {
       </div>
 
     </div>
+
+    <!-- Notification Modal -->
+    <NotificationModal
+      :visible="notification.visible"
+      :type="notification.type"
+      :title="notification.title"
+      :message="notification.message"
+      @close="closeNotification"
+    />
   </div>
 </template>
 
