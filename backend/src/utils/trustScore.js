@@ -321,5 +321,3 @@ module.exports = {
   TRUST_SCORE_VERSION,
   WEIGHTS
 };
-
-// Made with Bob
