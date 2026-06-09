@@ -18,6 +18,77 @@ const seedUsers = [
     email:    'testadmin@reportit.com',
     password: 'admin1234',
     role:     'admin'
+  },
+  // Usuarios que coinciden con los nombres del seed-demo.js
+  {
+    username: 'Juan',
+    surname:  'González',
+    email:    'juan.gonzalez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'María',
+    surname:  'Rodríguez',
+    email:    'maria.rodriguez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Carlos',
+    surname:  'Fernández',
+    email:    'carlos.fernandez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Ana',
+    surname:  'López',
+    email:    'ana.lopez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Luis',
+    surname:  'Martínez',
+    email:    'luis.martinez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Laura',
+    surname:  'García',
+    email:    'laura.garcia@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Pedro',
+    surname:  'Pérez',
+    email:    'pedro.perez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Sofia',
+    surname:  'Sánchez',
+    email:    'sofia.sanchez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Diego',
+    surname:  'González',
+    email:    'diego.gonzalez@example.com',
+    password: 'demo1234',
+    role:     'user'
+  },
+  {
+    username: 'Valentina',
+    surname:  'Rodríguez',
+    email:    'valentina.rodriguez@example.com',
+    password: 'demo1234',
+    role:     'user'
   }
 ]
  
