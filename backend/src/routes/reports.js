@@ -111,12 +111,16 @@ router.post("/", async (req, res) => {
 
     // Calcular trust score automáticamente
     try {
+      console.log('[TRUST SCORE] Iniciando cálculo para reporte:', savedReport._id);
       const { score, metadata } = await calculateTrustScore(savedReport);
+      console.log('[TRUST SCORE] Calculado exitosamente:', score);
       savedReport.trust_score = score;
       savedReport.trust_score_metadata = metadata;
       await savedReport.save();
+      console.log('[TRUST SCORE] Guardado en DB');
     } catch (trustScoreError) {
-      console.error('Error calculating trust score:', trustScoreError);
+      console.error('[TRUST SCORE] ❌ Error calculating trust score:', trustScoreError);
+      console.error('[TRUST SCORE] Stack trace:', trustScoreError.stack);
       // No fallar la creación del reporte si falla el trust score
     }
 
