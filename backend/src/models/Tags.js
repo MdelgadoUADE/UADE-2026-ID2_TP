@@ -1,66 +1,32 @@
 const mongoose = require("mongoose");
 
-const TagSchema = new mongoose.Schema(
-  {
-    canonical_name: {
+const TagSchema = new mongoose.Schema({
+  canonical_name: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+
+  normal_name: {
+    type: String,
+  },
+
+  aliases: [
+    {
       type: String,
-      required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
+  ],
 
-    aliases: [
-      {
-        type: String,
-        lowercase: true,
-        trim: true,
-      },
-    ],
-
-    type: {
-      type: String,
-      enum: ["vehiculo", "persona", "ambiente", "otros"],
-      required: true,
-    },
-
-    description: {
-      type: String,
-      default: "",
-    },
-
-    created_by: {
-      user_id: {
-        type: String,
-      },
-
-      username: {
-        type: String,
-      },
-    },
-
-    is_system: {
-      type: Boolean,
-      default: false,
-    },
-
-    is_active: {
-      type: Boolean,
-      default: true,
-    },
-
-    usage_count: {
-      type: Number,
-      default: 0,
-    },
+  type: {
+    type: String,
+    enum: ["vehiculo", "persona", "ambiente", "otros"],
+    required: true,
   },
-  {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
-  },
-);
+});
 
 /* =========================
    INDEXES

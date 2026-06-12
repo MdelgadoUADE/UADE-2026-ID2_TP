@@ -3,6 +3,15 @@ const router = express.Router();
 
 const Tag = require("../models/Tags");
 
+function createNormalName(str) {
+  return str
+    .replace(/_/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 router.get("/", async (req, res) => {
   try {
     const tags = await Tag.find();
@@ -34,7 +43,12 @@ router.post("/", async (req, res) => {
     }
 
     /* Normalizar nombre */
-    const normalizedName = canonical_name.trim().toLowerCase();
+    const normalizedName = canonical_name
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+
+    const normalName = createNormalName(normalizedName);
 
     /* revisar si existe */
     const existingTag = await Tag.findOne({
@@ -52,9 +66,9 @@ router.post("/", async (req, res) => {
     /* crear tag nuevo */
     const newTag = await Tag.create({
       canonical_name: normalizedName,
+      normal_name: normalName,
       description: description || "",
       type,
-      is_system: false,
     });
 
     return res.status(201).json({
