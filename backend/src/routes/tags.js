@@ -69,7 +69,6 @@ router.post("/", async (req, res) => {
       normal_name: normalName,
       description: description || "",
       type,
-      is_system: false,
     });
 
     return res.status(201).json({

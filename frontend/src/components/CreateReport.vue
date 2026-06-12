@@ -26,7 +26,7 @@ const selectedTagValue = ref("");
 const addedTags = ref([]);
 const customTags = ref([]);
 const customTag = ref("");
-const customDescription = ref("");
+const customValue = ref("");
 const showCustomTagForm = ref(false);
 
 // Categorías disponibles basadas en el tipo del schema
@@ -80,12 +80,12 @@ function addCustomTag() {
 
   customTags.value.push({
     canonical_name: tagName,
-    description: customDescription.value.trim(),
+    value: customValue.value.trim(), // Asignamos el valor en lugar de la descripción
     isCustom: true,
   });
 
   customTag.value = "";
-  customDescription.value = "";
+  customValue.value = ""; // Limpiamos el valor
   showCustomTagForm.value = false;
 }
 
@@ -146,7 +146,7 @@ onMounted(async () => {
 
 function cancelCustomTag() {
   customTag.value = "";
-  customDescription.value = "";
+  customValue.value = "";
   showCustomTagForm.value = false;
 }
 
@@ -170,8 +170,8 @@ async function handleSubmit() {
         },
         body: JSON.stringify({
           canonical_name: tag.canonical_name,
-          description: tag.description,
           type: "otros",
+          // Se eliminó la descripción
         }),
       });
 
@@ -181,7 +181,8 @@ async function handleSubmit() {
         throw new Error(`No se pudo crear la etiqueta ${tag.canonical_name}`);
       }
 
-      tagsObject[tagData.tag.normal_name] = null;
+      // Agregamos la etiqueta recién creada al objeto de reporte CON su valor
+      tagsObject[tagData.tag.canonical_name] = tag.value || null;
     }
     /* Creando reporte */
 
@@ -226,7 +227,7 @@ async function handleSubmit() {
     customTags.value = [];
     showCustomTagForm.value = false;
     customTag.value = "";
-    customDescription.value = "";
+    customValue.value = "";
     notes.value = "";
     selectedTagValue.value = "";
     addedTags.value = [];
@@ -286,7 +287,6 @@ async function handleSubmit() {
       <section class="border rounded-xl p-4">
         <h3 class="font-semibold text-lg mb-4">Etiquetas</h3>
 
-        <!-- Paso 1: Categoría -->
         <div class="mb-3">
           <label class="block mb-2 font-medium">Categoría</label>
           <div class="grid grid-cols-2 gap-2">
@@ -308,7 +308,6 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <!-- Paso 2: Tag de la categoría -->
         <div v-if="selectedCategory" class="mb-3">
           <label class="block mb-2 font-medium">Etiqueta</label>
 
@@ -334,63 +333,6 @@ async function handleSubmit() {
             </option>
           </select>
         </div>
-
-        <!-- Paso 3: Valor del tag -->
-        <div
-          v-if="addedTags.length > 0 || customTags.length > 0"
-          class="space-y-2"
-        >
-          <label class="block text-sm font-medium text-gray-600">
-            Etiquetas agregadas
-          </label>
-
-          <div
-            v-for="(tag, index) in customTags"
-            :key="'custom-' + index"
-            class="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg px-3 py-2"
-          >
-            <div class="flex items-center gap-2 text-sm">
-              <span class="font-medium text-green-700">
-                {{ tag.canonical_name }}
-              </span>
-              <span class="text-xs text-green-500"> (personalizada) </span>
-            </div>
-            <button
-              type="button"
-              @click="removeCustomTag(index)"
-              class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div
-            v-for="(tag, index) in addedTags"
-            :key="'normal-' + index"
-            class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
-          >
-            <div class="flex items-center gap-2 text-sm">
-              <span class="font-medium text-blue-700">
-                {{ tag.normal_name }}
-              </span>
-              <span v-if="tag.value" class="text-gray-500"
-                >→ {{ tag.value }}</span
-              >
-              <span v-else class="text-gray-400 italic">sin valor</span>
-            </div>
-            <button
-              type="button"
-              @click="removeTag(index)"
-              class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <p v-else class="text-sm text-gray-400 italic">
-          No hay etiquetas agregadas aún.
-        </p>
 
         <div v-if="selectedTag && currentTagConfig" class="mb-3">
           <label class="block mb-2 font-medium">
@@ -432,73 +374,134 @@ async function handleSubmit() {
           />
         </div>
 
-        <!-- Botón agregar -->
-        <button
-          type="button"
-          @click="addTag"
-          :disabled="!selectedTag"
-          class="mb-4 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium"
-        >
-          + Agregar etiqueta
-        </button>
+        <div class="flex flex-col sm:flex-row gap-3 mt-4 mb-4">
+          <button
+            type="button"
+            @click="addTag"
+            :disabled="!selectedTag"
+            class="flex-1 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+          >
+            + Agregar etiqueta
+          </button>
 
-        <!-- Agregar etiqueta personalizada -->
-        <div class="mt-4">
           <button
             v-if="!showCustomTagForm"
             type="button"
             @click="showCustomTagForm = true"
-            class="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 text-sm font-medium"
+            class="flex-1 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors"
           >
-            + Agregar etiqueta personalizada
+            + Etiqueta personalizada
           </button>
+        </div>
 
+        <div
+          v-if="showCustomTagForm"
+          class="border border-green-200 bg-green-50 rounded-xl p-4 mb-4 space-y-4"
+        >
+          <div>
+            <label class="block mb-2 font-medium">
+              Nombre de la etiqueta
+            </label>
+            <input
+              v-model="customTag"
+              type="text"
+              placeholder="Ej: Poste caído"
+              class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label class="block mb-2 font-medium"> Valor (Opcional) </label>
+            <textarea
+              v-model="customValue"
+              rows="3"
+              placeholder="Ej: 3, Rojo, Roto..."
+              class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              type="button"
+              @click="addCustomTag"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Agregar
+            </button>
+            <button
+              type="button"
+              @click="cancelCustomTag"
+              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 bg-white"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-200">
           <div
-            v-else
-            class="border border-green-200 bg-green-50 rounded-xl p-4 mt-2 space-y-4"
+            v-if="addedTags.length > 0 || customTags.length > 0"
+            class="space-y-2"
           >
-            <div>
-              <label class="block mb-2 font-medium">
-                Nombre de la etiqueta
-              </label>
+            <label class="block text-sm font-medium text-gray-800 mb-3">
+              Etiquetas agregadas
+            </label>
 
-              <input
-                v-model="customTag"
-                type="text"
-                placeholder="Ej: Poste caído"
-                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            <div
+              v-for="(tag, index) in customTags"
+              :key="'custom-' + index"
+              class="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg px-3 py-2"
+            >
+              <div class="flex items-center gap-2 text-sm">
+                <span class="font-medium text-green-700">
+                  {{ tag.canonical_name }}
+                </span>
 
-            <div>
-              <label class="block mb-2 font-medium"> Descripción </label>
+                <span v-if="tag.value" class="text-gray-500"
+                  >→ {{ tag.value }}</span
+                >
+                <span v-else class="text-gray-400 italic">sin valor</span>
 
-              <textarea
-                v-model="customDescription"
-                rows="3"
-                placeholder="Descripción opcional"
-                class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div class="flex gap-2">
+                <span class="text-xs text-green-500 ml-1">
+                  (personalizada)
+                </span>
+              </div>
               <button
                 type="button"
-                @click="addCustomTag"
-                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                @click="removeCustomTag(index)"
+                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
               >
-                Agregar
+                ✕
               </button>
+            </div>
 
+            <div
+              v-for="(tag, index) in addedTags"
+              :key="'normal-' + index"
+              class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
+            >
+              <div class="flex items-center gap-2 text-sm">
+                <span class="font-medium text-blue-700">
+                  {{ tag.normal_name }}
+                </span>
+                <span v-if="tag.value" class="text-gray-500"
+                  >→ {{ tag.value }}</span
+                >
+                <span v-else class="text-gray-400 italic">sin valor</span>
+              </div>
               <button
                 type="button"
-                @click="cancelCustomTag"
-                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                @click="removeTag(index)"
+                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
               >
-                Eliminar
+                ✕
               </button>
             </div>
           </div>
+
+          <p v-else class="text-sm text-gray-400 italic mt-2">
+            No hay etiquetas agregadas aún.
+          </p>
         </div>
       </section>
 
