@@ -10,6 +10,10 @@ const TagSchema = new mongoose.Schema(
       trim: true,
     },
 
+    normal_name: {
+      type: String,
+    },
+
     aliases: [
       {
         type: String,
