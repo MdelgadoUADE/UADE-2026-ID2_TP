@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',        // equivale a --host, para que Docker exponga el puerto
     port: 5173,
+    allowedHosts: ['reportit.ar'],
     watch: {
       usePolling: true // necesario en Docker Desktop (Windows/Mac) para detectar cambios del host
     },
