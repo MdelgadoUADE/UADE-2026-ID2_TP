@@ -1,10 +1,10 @@
-# 🌱 Guía de Uso: Generador de Datos de Demostración
+# Guía de Uso: Generador de Datos de Demostración
 
 ## Descripción General
 
 El script `seed-demo.js` genera datos realistas de reportes para demostrar las capacidades de MongoDB y el dashboard de analytics del sistema Report-IT.
 
-## 🎯 Características
+## Características
 
 ### Datos Generados
 
@@ -31,7 +31,7 @@ El script `seed-demo.js` genera datos realistas de reportes para demostrar las c
 | **Tránsito** | Accidente | `tipo_accidente`, `vehiculos_involucrados` | 6% |
 | **Tránsito** | Vehículo abandonado | `tipo_vehiculo`, `estado` | 4% |
 
-## 🚀 Uso
+## Uso
 
 ### Opción 1: Integrado con el servidor (Recomendado)
 
@@ -101,7 +101,7 @@ Ejecuta:
 node scripts/generate-demo-data.js
 ```
 
-## ⚙️ Configuración
+## Configuración
 
 ### Variables de Entorno
 
@@ -124,7 +124,7 @@ const CONFIG = {
 };
 ```
 
-## 📊 Resultados Esperados
+## Resultados Esperados
 
 ### Con 5,000 reportes:
 
@@ -168,20 +168,20 @@ Multiplica los valores anteriores por 20. Tiempo estimado de generación: ~10 mi
 
 Accede a la vista de estadísticas y verifica:
 
-- ✅ **Embudo de estados**: Debe mostrar distribución 35/20/15/20/10
-- ✅ **Distribución por criticidad**: Gráfico de barras con 4 niveles
-- ✅ **Distribución por validez**: Pendiente (40%), Válido (35%), Dudoso (15%), Falso (10%)
-- ✅ **Reportes anónimos**: ~30% del total
-- ✅ **Trust score promedio**: Entre 0.65 y 0.75
+-  **Embudo de estados**: Debe mostrar distribución 35/20/15/20/10
+-  **Distribución por criticidad**: Gráfico de barras con 4 niveles
+-  **Distribución por validez**: Pendiente (40%), Válido (35%), Dudoso (15%), Falso (10%)
+-  **Reportes anónimos**: ~30% del total
+-  **Trust score promedio**: Entre 0.65 y 0.75
 
 ### 2. Categoría: Geo-Análisis
 
 Accede a la vista geoespacial y verifica:
 
-- ✅ **Heatmap**: Debe mostrar concentración en Palermo, Recoleta y Nueva Córdoba
-- ✅ **Top 10 zonas**: Palermo debe ser #1 con ~18% de reportes
-- ✅ **Filtros por criticidad**: Cambiar filtro debe actualizar heatmap
-- ✅ **Filtros por tiempo**: "Últimas 24h" debe mostrar ~10% del total
+-  **Heatmap**: Debe mostrar concentración en Palermo, Recoleta y Nueva Córdoba
+-  **Top 10 zonas**: Palermo debe ser #1 con ~18% de reportes
+-  **Filtros por criticidad**: Cambiar filtro debe actualizar heatmap
+-  **Filtros por tiempo**: "Últimas 24h" debe mostrar ~10% del total
 
 ### 3. Categoría: Correlación y Clusters
 
@@ -195,7 +195,7 @@ Accede a la vista de clusters y prueba:
 3. **Ejecutar correlación**: Debe encontrar 15-40 reportes relacionados
 4. **Verificar**: Los reportes deben tener tags similares y estar cerca en tiempo/espacio
 
-## 🎨 Ejemplos de Clusters Generados
+##  Ejemplos de Clusters Generados
 
 ### Ejemplo 1: Vehículo Sospechoso
 
@@ -229,7 +229,7 @@ Accede a la vista de clusters y prueba:
 }
 ```
 
-## 📈 Performance Esperada
+## Performance Esperada
 
 ### Generación de Datos
 
@@ -252,7 +252,7 @@ Con índice 2dsphere configurado:
 | Búsqueda full-text | < 200ms |
 | Heatmap (5000 puntos) | < 300ms |
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Error: "Cannot find module './seed-demo'"
 
@@ -286,7 +286,7 @@ Con índice 2dsphere configurado:
 
 **Verificación**: Los pesos en `ZONES` deben sumar 100. Revisa la configuración en `seed-demo.js`.
 
-## 🔄 Regenerar Datos
+## Regenerar Datos
 
 Para regenerar datos desde cero:
 
@@ -303,7 +303,7 @@ mongo
 
 Luego ejecuta el seed nuevamente.
 
-## 📝 Notas Importantes
+## Notas Importantes
 
 1. **No genera campos `related_reports`**: Los clusters deben ser descubiertos por el sistema automáticamente.
 
@@ -315,7 +315,7 @@ Luego ejecuta el seed nuevamente.
 
 5. **Usuarios variados**: 70% autenticados, 30% anónimos, con nombres y emails realistas.
 
-## 🎓 Uso Académico
+## Uso Académico
 
 Este generador está diseñado para demostrar:
 
@@ -325,7 +325,7 @@ Este generador está diseñado para demostrar:
 4. **Agregaciones complejas**: Pipeline de agregación de MongoDB
 5. **Análisis de datos**: Visualizaciones y estadísticas en tiempo real
 
-## 📚 Referencias
+## Referencias
 
 - [MongoDB Geospatial Queries](https://docs.mongodb.com/manual/geospatial-queries/)
 - [MongoDB Aggregation Pipeline](https://docs.mongodb.com/manual/core/aggregation-pipeline/)
