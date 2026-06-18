@@ -68,6 +68,10 @@ function showNotification(type, title, message) {
 
 function closeNotification() {
   notification.value.visible = false;
+
+  if (notification.value.type === "success") {
+    emit("close");
+  }
 }
 
 // Computed que devuelve la config del tag actualmente seleccionado
@@ -245,8 +249,6 @@ async function handleSubmit() {
       "¡Reporte enviado!",
       "Tu reporte ha sido creado exitosamente",
     );
-
-    emit("close");
 
     /*
       Reset form
