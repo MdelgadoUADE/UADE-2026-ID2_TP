@@ -30,7 +30,7 @@ function draw() {
 
   const maxVal = Math.max(...data.map(d => d.count))
   const n      = data.length
-  const PAD    = { top: 6, bottom: 6, left: 110, right: 60 }
+  const PAD    = { top: 6, bottom: 22, left: 110, right: 60 }
   const chartW = W - PAD.left - PAD.right
   const rowH   = (H - PAD.top - PAD.bottom) / n - 4
   const gap    = 4
@@ -77,7 +77,8 @@ function draw() {
     ctx.fillStyle = '#9CA3AF'
     ctx.font      = '10px system-ui, sans-serif'
     ctx.textAlign = 'left'
-    ctx.fillText(`Tasa de resolución: ${pct}%`, PAD.left, H - 2)
+    ctx.textBaseline = 'bottom'
+    ctx.fillText(`Tasa de resolución: ${pct}%`, PAD.left, H - 4)
   }
 }
 
