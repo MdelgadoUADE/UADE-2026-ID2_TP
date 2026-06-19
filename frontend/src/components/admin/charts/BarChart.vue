@@ -28,8 +28,8 @@ function draw() {
   ctx.clearRect(0, 0, W, H)
 
   const data    = props.data
-  const maxVal  = Math.max(...data.map(d => d.count), 1)
-  const PAD     = { top: 8, right: 16, bottom: props.horizontal ? 8 : 28, left: props.horizontal ? 100 : 8 }
+  const maxVal = Math.max(...data.map(d => d.count), 1) * 1.15 
+  const PAD = { top: 22, right: 16, bottom: props.horizontal ? 8 : 28, left: props.horizontal ? 100 : 8 }
   const chartW  = W - PAD.left - PAD.right
   const chartH  = H - PAD.top  - PAD.bottom
 
@@ -83,7 +83,7 @@ function draw() {
 
     data.forEach((d, i) => {
       const x    = PAD.left + i * spacing + (spacing - barW) / 2
-      const barH = (d.count / maxVal) * chartH
+      const barH = (d.count / maxVal) * (chartH - 4) 
       const y    = PAD.top + chartH - barH
 
       // Bar
