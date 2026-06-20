@@ -444,6 +444,124 @@ router.get("/admin/geo-stats", async (req, res) => {
   }
 });
 
+// =========================
+// GET /reports/admin/temporal-stats — Categoría 3: Análisis Temporal
+// Ayuda a entender "cuándo" ocurren los incidentes (tendencias y horarios)
+// para habilitar la Estrategia 3 (Cobertura preventiva focalizada).
+//
+// Query params:
+//   granularidad : 'dia' | 'semana' | 'mes'   (default: 'dia')
+//   diasAtras    : número, 0 = sin límite      (default: 30)
+//   criticidad   : '' | 'baja' | 'media' | 'alta' | 'critica'
+//   validez      : '' | 'valido' | 'dudoso' | 'falso' | 'pendiente'
+//
+// Devuelve:
+//   tendencia          : [{ _id: 'YYYY-MM-DD' | 'YYYY-Www' | 'YYYY-MM', count }]
+//   matriz_dia_hora    : [{ dia: 1-7 (Mongo: 1=Domingo), franja: 'madrugada'|'manana'|'tarde'|'noche', count }]
+//   totales            : { total, promedio_diario }
+// =========================
+router.get("/admin/temporal-stats", async (req, res) => {
+  try {
+    const {
+      granularidad = "dia",
+      diasAtras = 30,
+      criticidad,
+      validez,
+    } = req.query;
+
+    // ── Filtro base ──────────────────────────────────────────────────────
+    const filter = {};
+    if (criticidad) filter.criticidad = criticidad;
+    if (validez) filter.validez = validez;
+
+    const dias = parseInt(diasAtras, 10);
+    if (!isNaN(dias) && dias > 0) {
+      filter.timestamp = { $gte: new Date(Date.now() - dias * 24 * 60 * 60 * 1000) };
+    }
+
+    // ── Formato de fecha según granularidad (para $dateToString) ────────
+    const DATE_FORMATS = {
+      dia: "%Y-%m-%d",
+      semana: "%G-W%V", // año ISO + semana ISO
+      mes: "%Y-%m",
+    };
+    const dateFormat = DATE_FORMATS[granularidad] ?? DATE_FORMATS.dia;
+
+    const [result] = await Report.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          // ── Tendencia temporal (línea) ──────────────────────────────
+          tendencia: [
+            {
+              $group: {
+                _id: {
+                  $dateToString: { format: dateFormat, date: "$timestamp", timezone: "America/Argentina/Buenos_Aires" },
+                },
+                count: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+
+          // ── Matriz día de semana × franja horaria (heatmap) ─────────
+          // dayOfWeek: 1=Domingo ... 7=Sábado (estándar Mongo)
+          matriz_dia_hora: [
+            {
+              $addFields: {
+                dia_semana: { $dayOfWeek: { date: "$timestamp", timezone: "America/Argentina/Buenos_Aires" } },
+                hora_local: { $hour: { date: "$timestamp", timezone: "America/Argentina/Buenos_Aires" } },
+              },
+            },
+            {
+              $addFields: {
+                franja: {
+                  $switch: {
+                    branches: [
+                      { case: { $and: [{ $gte: ["$hora_local", 0] }, { $lt: ["$hora_local", 6] }] }, then: "madrugada" },
+                      { case: { $and: [{ $gte: ["$hora_local", 6] }, { $lt: ["$hora_local", 12] }] }, then: "manana" },
+                      { case: { $and: [{ $gte: ["$hora_local", 12] }, { $lt: ["$hora_local", 19] }] }, then: "tarde" },
+                    ],
+                    default: "noche", // 19hs - 23hs
+                  },
+                },
+              },
+            },
+            {
+              $group: {
+                _id: { dia: "$dia_semana", franja: "$franja" },
+                count: { $sum: 1 },
+              },
+            },
+          ],
+
+          // ── Totales generales ────────────────────────────────────────
+          totales: [
+            { $group: { _id: null, total: { $sum: 1 } } },
+          ],
+        },
+      },
+    ]);
+
+    const total = result?.totales?.[0]?.total ?? 0;
+    const diasRango = !isNaN(dias) && dias > 0 ? dias : null;
+
+    res.json({
+      success: true,
+      tendencia: result?.tendencia ?? [],
+      matriz_dia_hora: result?.matriz_dia_hora ?? [],
+      totales: {
+        total,
+        promedio_diario: diasRango ? Math.round((total / diasRango) * 10) / 10 : null,
+      },
+      filtros: { granularidad, diasAtras: dias, criticidad, validez },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching temporal stats" });
+  }
+});
+
 
 // =========================
 // GET /reports/:id — Reporte por ID

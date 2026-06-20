@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { AlertTriangle, MapPin, Clock, Shield } from 'lucide-vue-next'
 import IncidentManagementView from './admin/IncidentManagementView.vue'
 import IncidentGeoView        from './admin/IncidentGeoView.vue'
+import IncidentTemporalView   from './admin/IncidentTemporalView.vue'
 
 defineProps({
   currentUser: Object
@@ -13,7 +14,7 @@ const activeCategory = ref('incidentes')
 const CATEGORIES = [
   { id: 'incidentes', label: 'Gestión de incidentes', icon: AlertTriangle },
   { id: 'geo',        label: 'Geo-análisis',           icon: MapPin },
-  { id: 'temporal',   label: 'Análisis temporal',      icon: Clock, soon: true },
+  { id: 'temporal',   label: 'Análisis temporal',      icon: Clock },
   { id: 'confianza',  label: 'Calidad y confianza',    icon: Shield, soon: true },
 ]
 </script>
@@ -46,6 +47,7 @@ const CATEGORIES = [
     <!-- Contenido de la categoría activa -->
     <IncidentManagementView v-if="activeCategory === 'incidentes'" />
     <IncidentGeoView        v-if="activeCategory === 'geo'" />
+    <IncidentTemporalView   v-if="activeCategory === 'temporal'" />
 
   </div>
 </template>
