@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import {
   Search, X, MapPin, Clock3, Tag,
   FileText, User, Copy, Check,
@@ -84,6 +84,23 @@ function syncFromCache(scopeKey, page) {
   }
 
   return false
+}
+
+/**
+ * Invalida toda la cache de búsqueda en sessionStorage.
+ * Se llama cada vez que la vista se monta (entra a la sección de Búsqueda),
+ * para evitar mostrar datos obsoletos si el backend/BBDD cambió entre
+ * visitas (ej: reinicio de la BBDD, reseed, etc).
+ * La cache se sigue usando con normalidad mientras el usuario permanece
+ * en esta vista (cambia de página, filtra, etc.), solo se descarta al
+ * re-entrar a la sección.
+ */
+function invalidateCache() {
+  try {
+    sessionStorage.removeItem(CACHE_KEY)
+  } catch {
+    // sessionStorage no disponible → no interrumpir el flujo
+  }
 }
 
 const totalPages = computed(() => {
@@ -174,9 +191,20 @@ function handlePageSizeInput(event) {
 
 onMounted(() => {
   pageSize.value = normalizePageSize(pageSize.value)
-  const scopeKey = getCacheScopeKey()
-  if (syncFromCache(scopeKey, currentPage.value)) return
-  fetchReports()
+  // Cada vez que se entra/vuelve a esta vista, se descarta la cache previa
+  // y se hace un fetch fresco. Esto evita mostrar resultados obsoletos
+  // (ej: tras un reseed/reset de la BBDD) cuando el usuario sale y vuelve
+  // a entrar a la sección de Búsqueda. Dentro de la misma visita, la cache
+  // se sigue usando normalmente (paginación, filtros repetidos, etc).
+  invalidateCache()
+  fetchReports({ force: true })
+})
+
+// Si el usuario hace logout, limpiar la cache también (mismo patrón que
+// IncidentClustersView), para que la próxima sesión no la herede.
+window.addEventListener('reportit:logout', invalidateCache)
+onBeforeUnmount(() => {
+  window.removeEventListener('reportit:logout', invalidateCache)
 })
 
 // ─── Watchers ────────────────────────────────────────────────────────────────
