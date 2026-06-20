@@ -562,6 +562,172 @@ router.get("/admin/temporal-stats", async (req, res) => {
   }
 });
 
+// =========================
+// GET /reports/admin/user-stats — Categoría 4: Calidad y Confianza
+// Métricas de comportamiento de los usuarios que reportan: volumen, validez
+// de sus reportes y trust score, para detectar posibles cuentas maliciosas
+// o usuarios especialmente confiables.
+//
+// Cruza datos de dos fuentes:
+//   - MongoDB (reports): conteos por user.user_id (válidos, falsos, etc.)
+//   - PostgreSQL (users): username, surname, email, role — fuente de verdad
+//     de identidad/rol. Permite además detectar usuarios sin reportes aún.
+//
+// Query params:
+//   minReportes : número, mínimo de reportes para aparecer en el ranking (default 1)
+//   rol         : '' | 'user' | 'admin' | etc. (filtra por users.role)
+//   sort        : campo de orden (default 'total_reportes') — uno de:
+//                 total_reportes | validos | falsos | tasa_falsos | trust_score_promedio
+//   dir         : 'asc' | 'desc' (default 'desc')
+//   limit       : tamaño de página (default 25, máx 200)
+//   skip        : offset (default 0)
+// =========================
+router.get("/admin/user-stats", async (req, res) => {
+  try {
+    const {
+      minReportes = 1,
+      rol,
+      sort = "total_reportes",
+      dir = "desc",
+      limit = "25",
+      skip = "0",
+    } = req.query;
+
+    const minRep = parseInt(minReportes, 10) || 1;
+    const limitNum = Math.min(parseInt(limit, 10) || 25, 200);
+    const skipNum = Math.max(parseInt(skip, 10) || 0, 0);
+
+    const SORT_FIELDS = ["total_reportes", "validos", "falsos", "tasa_falsos", "trust_score_promedio"];
+    const sortField = SORT_FIELDS.includes(sort) ? sort : "total_reportes";
+    const sortDir = dir === "asc" ? 1 : -1;
+
+    // ── 1. Agregación en Mongo: métricas por user_id ──────────────────────
+    const porUsuario = await Report.aggregate([
+      {
+        $match: {
+          is_anonymous: { $ne: true }, // los anónimos no tienen user_id confiable para rankear
+        },
+      },
+      {
+        $group: {
+          _id: "$user.user_id",
+          username: { $first: "$user.username" },
+          surname: { $first: "$user.surname" },
+          email: { $first: "$user.email" },
+          total_reportes: { $sum: 1 },
+          validos: { $sum: { $cond: [{ $eq: ["$validez", "valido"] }, 1, 0] } },
+          falsos: { $sum: { $cond: [{ $eq: ["$validez", "falso"] }, 1, 0] } },
+          dudosos: { $sum: { $cond: [{ $eq: ["$validez", "dudoso"] }, 1, 0] } },
+          pendientes: { $sum: { $cond: [{ $eq: ["$validez", "pendiente"] }, 1, 0] } },
+          trust_score_promedio: { $avg: "$trust_score" },
+          ultimo_reporte: { $max: "$timestamp" },
+        },
+      },
+    ]);
+
+    // ── 2. Traer usuarios desde Postgres (fuente de verdad de rol) ────────
+    const { pool } = require("../config/postgres");
+    const pgResult = await pool.query(
+      "SELECT user_id, username, surname, email, role FROM users"
+    );
+    const pgUsers = pgResult.rows; // user_id acá es numérico (SERIAL), distinto al user_id de Mongo (ObjectId string)
+
+    // El user_id embebido en los reportes (Mongo) no necesariamente coincide
+    // 1:1 con el user_id de Postgres en datos de seed/mock. Cruzamos por
+    // username como mejor esfuerzo, y si no hay match dejamos rol = null.
+    const pgByUsername = new Map(pgUsers.map((u) => [u.username, u]));
+
+    let combinados = porUsuario.map((u) => {
+      const pgMatch = pgByUsername.get(u.username);
+      const tasaFalsos = u.total_reportes > 0 ? u.falsos / u.total_reportes : 0;
+      return {
+        user_id: u._id,
+        username: u.username,
+        surname: u.surname,
+        email: u.email,
+        role: pgMatch?.role ?? null,
+        total_reportes: u.total_reportes,
+        validos: u.validos,
+        falsos: u.falsos,
+        dudosos: u.dudosos,
+        pendientes: u.pendientes,
+        tasa_falsos: Math.round(tasaFalsos * 1000) / 1000,
+        trust_score_promedio:
+          u.trust_score_promedio != null ? Math.round(u.trust_score_promedio * 1000) / 1000 : null,
+        ultimo_reporte: u.ultimo_reporte,
+        tiene_reportes: true,
+      };
+    });
+
+    // Filtro por mínimo de reportes
+    combinados = combinados.filter((u) => u.total_reportes >= minRep);
+
+    // Filtro por rol (solo aplica a quienes matchearon con Postgres)
+    if (rol) {
+      combinados = combinados.filter((u) => u.role === rol);
+    }
+
+    // ── 3. Orden (server-side, antes de paginar) ───────────────────────────
+    combinados.sort((a, b) => {
+      const av = a[sortField] ?? -1;
+      const bv = b[sortField] ?? -1;
+      return (av - bv) * sortDir;
+    });
+
+    // ── 4. Paginación sobre el resultado ya combinado y ordenado ──────────
+    const totalRanking = combinados.length;
+    const paginaActual = combinados.slice(skipNum, skipNum + limitNum);
+
+    // ── 5. Usuarios de Postgres SIN reportes aún ───────────────────────────
+    const usernamesConReportes = new Set(porUsuario.map((u) => u.username));
+    const sinReportes = pgUsers
+      .filter((u) => !usernamesConReportes.has(u.username))
+      .filter((u) => !rol || u.role === rol)
+      .map((u) => ({
+        user_id: String(u.user_id),
+        username: u.username,
+        surname: u.surname,
+        email: u.email,
+        role: u.role,
+        total_reportes: 0,
+        validos: 0,
+        falsos: 0,
+        dudosos: 0,
+        pendientes: 0,
+        tasa_falsos: 0,
+        trust_score_promedio: null,
+        ultimo_reporte: null,
+        tiene_reportes: false,
+      }));
+
+    // ── 6. Totales generales para KPIs (sobre el universo filtrado, no la página) ──
+    const totalUsuariosPlataforma = pgUsers.length;
+    const totalUsuariosActivos = porUsuario.length; // con al menos 1 reporte (no-anónimo)
+    const totalReportesNoAnonimos = porUsuario.reduce((acc, u) => acc + u.total_reportes, 0);
+    const totalFalsos = porUsuario.reduce((acc, u) => acc + u.falsos, 0);
+    const tasaFalsosGlobal = totalReportesNoAnonimos > 0 ? totalFalsos / totalReportesNoAnonimos : 0;
+
+    res.json({
+      success: true,
+      ranking: paginaActual,       // solo la página pedida
+      total: totalRanking,         // total de usuarios que matchean los filtros (para "Mostrando X de Y")
+      count: paginaActual.length,
+      skip: skipNum,
+      limit: limitNum,
+      sin_reportes: rol && minRep > 0 ? [] : sinReportes,
+      totales: {
+        usuarios_plataforma: totalUsuariosPlataforma,
+        usuarios_activos: totalUsuariosActivos,
+        tasa_falsos_global: Math.round(tasaFalsosGlobal * 1000) / 1000,
+        total_reportes_no_anonimos: totalReportesNoAnonimos,
+      },
+      filtros: { minReportes: minRep, rol: rol || null, sort: sortField, dir: dir === "asc" ? "asc" : "desc" },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching user stats" });
+  }
+});
 
 // =========================
 // GET /reports/:id — Reporte por ID

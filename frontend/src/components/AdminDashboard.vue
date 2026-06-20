@@ -4,6 +4,7 @@ import { AlertTriangle, MapPin, Clock, Shield } from 'lucide-vue-next'
 import IncidentManagementView from './admin/IncidentManagementView.vue'
 import IncidentGeoView        from './admin/IncidentGeoView.vue'
 import IncidentTemporalView   from './admin/IncidentTemporalView.vue'
+import IncidentUserStatsView  from './admin/IncidentUserStatsView.vue'
 
 defineProps({
   currentUser: Object
@@ -15,7 +16,7 @@ const CATEGORIES = [
   { id: 'incidentes', label: 'Gestión de incidentes', icon: AlertTriangle },
   { id: 'geo',        label: 'Geo-análisis',           icon: MapPin },
   { id: 'temporal',   label: 'Análisis temporal',      icon: Clock },
-  { id: 'confianza',  label: 'Calidad y confianza',    icon: Shield, soon: true },
+  { id: 'confianza',  label: 'Calidad y confianza',    icon: Shield },
 ]
 </script>
 
@@ -48,6 +49,7 @@ const CATEGORIES = [
     <IncidentManagementView v-if="activeCategory === 'incidentes'" />
     <IncidentGeoView        v-if="activeCategory === 'geo'" />
     <IncidentTemporalView   v-if="activeCategory === 'temporal'" />
+    <IncidentUserStatsView  v-if="activeCategory === 'confianza'" />
 
   </div>
 </template>
