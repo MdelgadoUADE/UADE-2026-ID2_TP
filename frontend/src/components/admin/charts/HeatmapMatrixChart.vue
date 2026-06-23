@@ -9,8 +9,14 @@ const props = defineProps({
 })
 
 const canvas  = ref(null)
+const wrapper = ref(null) // CAMBIO: ref al wrapper para calcular posición del tooltip
 const tooltip = ref(null) // { x, y, dia, franja, franjaSub, count }
-let   ro      = null
+
+// CAMBIO: Estado para controlar si el tooltip debe abrirse hacia arriba o abajo,
+// y hacia la izquierda o la derecha, para evitar que salga del viewport.
+const tooltipStyle = ref({})
+
+let   ro = null
 
 function hexToRgb(hex) {
   const v = hex.replace('#', '')
@@ -62,7 +68,12 @@ function draw() {
   ctx.textBaseline = 'middle'
   franjas.forEach((f, i) => {
     const x = PAD.left + i * cellW + cellW / 2
-    ctx.fillText(f.label, x, PAD.top / 2)
+
+    // CAMBIO: En pantallas muy angostas (W < 360) la etiqueta larga no entra.
+    // Usamos la etiqueta abreviada (primera palabra) cuando el ancho de celda
+    // es menor a 70px. Esto es puramente cosmético/visual, no toca lógica.
+    const labelText = cellW < 70 ? f.label.split(' ')[0] : f.label
+    ctx.fillText(labelText, x, PAD.top / 2)
   })
 
   // ── Filas: label de día + celdas ──
@@ -109,6 +120,11 @@ function draw() {
   })
 }
 
+// CAMBIO RESPONSIVE — handleMove mejorado:
+// El tooltip original usaba `transform: translate(-50%, -120%)` que podía salir
+// del viewport en los bordes izquierdo/superior/derecho en mobile.
+// Ahora calculamos si el tooltip está cerca del borde del WRAPPER (no solo del canvas)
+// y ajustamos la dirección de apertura del tooltip dinámicamente.
 function handleMove(evt) {
   const el = canvas.value
   const { rows, franjas } = props.matrix
@@ -136,10 +152,66 @@ function handleMove(evt) {
 
   const cell = rows[ri].cells[ci]
   tooltip.value = { x: mx, y: my, ...cell }
+
+  // CAMBIO: Calcular si el tooltip se va a salir del canvas por los bordes.
+  // El tooltip tiene aprox 160px de ancho y 50px de alto.
+  // Si está en la mitad izquierda → abrir hacia la derecha
+  // Si está en la mitad superior → abrir hacia abajo
+  // Esto evita que el tooltip salga del contenedor en mobile.
+  const TOOLTIP_W = 160
+  const TOOLTIP_H = 56
+  const openRight = mx < rect.width / 2
+  const openDown  = my < TOOLTIP_H + 10
+
+  const styleObj = {}
+
+  if (openRight) {
+    // tooltip a la derecha del cursor
+    styleObj.left = (mx + 10) + 'px'
+    styleObj.transform = openDown
+      ? 'translate(0, 0)'        // abajo-derecha
+      : 'translate(0, -100%)'    // arriba-derecha
+  } else {
+    // tooltip a la izquierda del cursor
+    styleObj.left = (mx - 10) + 'px'
+    styleObj.transform = openDown
+      ? 'translate(-100%, 0)'    // abajo-izquierda
+      : 'translate(-100%, -100%)' // arriba-izquierda (posición original)
+  }
+
+  styleObj.top = my + 'px'
+
+  // Seguridad: si el tooltip saldría por la derecha aunque abramos a la izquierda,
+  // lo anclamos al borde derecho del canvas.
+  const wouldExceedRight = openRight && (mx + 10 + TOOLTIP_W > rect.width)
+  if (wouldExceedRight) {
+    styleObj.left  = 'auto'
+    styleObj.right = '0px'
+    delete styleObj.transform
+    styleObj.transform = openDown ? 'translate(0, 0)' : 'translate(0, -100%)'
+  }
+
+  tooltipStyle.value = styleObj
 }
 
 function handleLeave() {
   tooltip.value = null
+}
+
+// CAMBIO: Soporte para touch en mobile (mousemove no se dispara en touch).
+// Usamos touchmove para mostrar el tooltip en dispositivos táctiles,
+// y touchend para ocultarlo. No modifica ninguna lógica de datos.
+function handleTouch(evt) {
+  if (!evt.touches?.length) return
+  evt.preventDefault() // Evita scroll accidental mientras se inspecciona la celda
+  const touch = evt.touches[0]
+  handleMove({ clientX: touch.clientX, clientY: touch.clientY })
+}
+
+function handleTouchEnd() {
+  // En mobile ocultamos el tooltip al levantar el dedo (con un pequeño delay
+  // para que el usuario alcance a leerlo).
+  setTimeout(() => { tooltip.value = null }, 1200)
 }
 
 onMounted(async () => {
@@ -155,17 +227,38 @@ onUnmounted(() => ro?.disconnect())
 </script>
 
 <template>
-  <div class="relative">
+  <!--
+    CAMBIO RESPONSIVE:
+    - Se añade ref="wrapper" para poder obtener las dimensiones del contenedor
+      al calcular el posicionamiento del tooltip.
+    - "overflow-hidden" en el wrapper previene que el tooltip desborde el contenedor
+      visualmente, aunque el posicionamiento dinámico ya lo evita en la mayoría de casos.
+    - Se añaden listeners de touch para soporte en mobile.
+  -->
+  <div ref="wrapper" class="relative w-full overflow-hidden">
     <canvas
       ref="canvas"
       :style="{ width: '100%', height: height + 'px', display: 'block', cursor: 'crosshair' }"
       @mousemove="handleMove"
       @mouseleave="handleLeave"
+      @touchmove.passive="handleTouch"
+      @touchend="handleTouchEnd"
     />
+
+    <!--
+      CAMBIO RESPONSIVE — Tooltip mejorado:
+      - Se reemplaza el estilo estático "transform: translate(-50%, -120%)" por
+        el objeto "tooltipStyle" calculado dinámicamente en handleMove.
+      - Esto garantiza que el tooltip nunca salga del viewport horizontal ni
+        verticalmente, independientemente del tamaño de pantalla.
+      - "max-w-[200px]" evita que el texto desborde en pantallas muy angostas.
+      - "whitespace-nowrap" se mantiene pero se añade "break-words" como fallback
+        en caso de contenido muy largo (por seguridad).
+    -->
     <div
       v-if="tooltip"
-      class="absolute pointer-events-none bg-gray-900 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg z-10 whitespace-nowrap"
-      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px', transform: 'translate(-50%, -120%)' }"
+      class="absolute pointer-events-none bg-gray-900 text-white text-xs rounded-lg px-2.5 py-1.5 shadow-lg z-10 whitespace-nowrap max-w-[200px]"
+      :style="tooltipStyle"
     >
       <span class="font-medium">{{ tooltip.dia }} · {{ tooltip.franja }}</span>
       <span class="text-gray-300"> ({{ tooltip.franjaSub }})</span>

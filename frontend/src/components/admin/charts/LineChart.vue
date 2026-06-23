@@ -30,11 +30,27 @@ function draw() {
 
   const data    = props.data
   const maxVal  = Math.max(...data.map(d => d.value), 1) * 1.15
-  const PAD     = { top: 18, right: 14, bottom: 26, left: 30 }
+
+  // CAMBIO RESPONSIVE:
+  // En pantallas angostas (W < 400), el padding izquierdo se reduce ligeramente
+  // para ganar espacio en el área del gráfico, ya que los números del eje Y
+  // son cortos (max 4 dígitos). Se mantiene la misma lógica de renderizado.
+  const isNarrow = W < 400
+  const PAD      = {
+    top:    18,
+    right:  isNarrow ? 8  : 14,
+    bottom: 26,
+    left:   isNarrow ? 28 : 30,
+  }
+
   const chartW  = W - PAD.left - PAD.right
   const chartH  = H - PAD.top  - PAD.bottom
 
-  ctx.font = '10.5px system-ui, sans-serif'
+  // CAMBIO RESPONSIVE:
+  // En pantallas angostas reducimos el tamaño de fuente para que los labels
+  // del eje Y y X no se superpongan. Mínimo 9px para mantener legibilidad.
+  const fontSize = isNarrow ? 9.5 : 10.5
+  ctx.font = `${fontSize}px system-ui, sans-serif`
 
   // ── Líneas guía horizontales + eje Y ──
   const gridSteps = 4
@@ -94,8 +110,16 @@ function draw() {
       ctx.strokeStyle = props.color
       ctx.stroke()
 
-      if (props.showValues && data[i].value > 0) {
+      // CAMBIO RESPONSIVE:
+      // En pantallas angostas (isNarrow) los valores sobre los puntos se
+      // omiten si el espacio entre puntos es menor a 24px, para evitar
+      // superposición de texto. La lógica de datos no cambia.
+      const spaceBetweenPoints = data.length > 1 ? chartW / (data.length - 1) : chartW
+      const shouldShowValue = props.showValues && data[i].value > 0 && (!isNarrow || spaceBetweenPoints >= 24)
+
+      if (shouldShowValue) {
         ctx.fillStyle = '#374151'
+        ctx.font = `${fontSize}px system-ui, sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'bottom'
         ctx.fillText(data[i].value, p.x, p.y - 6)
@@ -103,10 +127,16 @@ function draw() {
     })
 
     // ── Labels eje X (mostrar subset si hay muchos puntos) ──
-    const maxLabels = Math.floor(chartW / 38)
-    const labelEvery = Math.max(1, Math.ceil(data.length / maxLabels))
+    // CAMBIO RESPONSIVE:
+    // Se reduce el mínimo de ancho por label de 38px a 32px en pantallas angostas,
+    // para mostrar más etiquetas antes de hacer skip. Esto mejora la legibilidad
+    // del eje X en mobile sin perder información clave.
+    const minLabelWidth = isNarrow ? 32 : 38
+    const maxLabels     = Math.floor(chartW / minLabelWidth)
+    const labelEvery    = Math.max(1, Math.ceil(data.length / maxLabels))
 
     ctx.fillStyle = '#6B7280'
+    ctx.font = `${fontSize}px system-ui, sans-serif`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     points.forEach((p, i) => {
@@ -130,5 +160,15 @@ onUnmounted(() => ro?.disconnect())
 </script>
 
 <template>
-  <canvas ref="canvas" :style="{ width: '100%', height: height + 'px', display: 'block' }" />
+  <!--
+    CAMBIO RESPONSIVE:
+    - Se añade "w-full min-w-0" al wrapper del canvas para que en contextos flex
+      el elemento no desborde su contenedor padre.
+    - El canvas en sí ya tenía width: 100% y el ResizeObserver ya redibujaba al
+      cambiar el tamaño. Estos cambios del wrapper garantizan que el canvas
+      respete los límites del contenedor en todos los breakpoints.
+  -->
+  <div class="w-full min-w-0">
+    <canvas ref="canvas" :style="{ width: '100%', height: height + 'px', display: 'block' }" />
+  </div>
 </template>
