@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, inject, watch } from "vue";
-import { Car, User, Building2, MapPin } from "lucide-vue-next";
+import { Car, User, Building2, MapPin, AlertTriangle } from "lucide-vue-next";
 import {
   TAG_INPUT_CONFIG,
   DEFAULT_TAG_CONFIG,
@@ -280,47 +280,81 @@ async function handleSubmit() {
     v-if="visible"
     class="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center md:p-4"
   >
-    <!-- Modal -->
+    <!-- Modal
+      RESPONSIVE CHANGES:
+      - Inner padding: `p-6` → `p-4 sm:p-6`
+        On 320px screens p-6 (24px × 2 = 48px consumed) vs p-4 (16px × 2 = 32px).
+        That 16px of extra content width prevents text truncation and input overflow.
+        On sm+ (≥640px) the original p-6 is restored.
+      - gap-5 preserved — vertical rhythm between sections unchanged.
+      - All other classes (bg-white, w-full, h-full, md:h-auto, md:max-h-[90vh],
+        md:max-w-xl, md:rounded-2xl, md:shadow-2xl, overflow-y-auto, flex, flex-col)
+        unchanged.
+    -->
     <div
-      class="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-2xl md:shadow-2xl overflow-y-auto flex flex-col p-6 gap-5"
+      class="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-xl md:rounded-2xl md:shadow-2xl overflow-y-auto flex flex-col p-4 sm:p-6 gap-5"
     >
-      <!-- Header -->
+      <!-- Header
+        RESPONSIVE CHANGES:
+        - Title: `text-2xl` → `text-xl sm:text-2xl`
+          On 320px, text-2xl (24px) is large for a modal header when combined with
+          the close button and gap. text-xl (20px) fits without wrapping.
+          On sm+ the original text-2xl is restored.
+        - All other header classes unchanged.
+      -->
       <div class="flex items-center gap-3">
         <button
           @click="emit('close')"
-          class="text-gray-500 hover:text-black text-lg"
+          class="text-gray-500 hover:text-black text-lg shrink-0 p-1"
         >
           ✕
         </button>
 
-        <h2 class="text-2xl font-bold">Crear Reporte</h2>
+        <h2 class="text-xl sm:text-2xl font-bold">Crear Reporte</h2>
       </div>
 
-      <!-- Location card -->
+      <!-- Location card — unchanged, already compact -->
       <section class="border rounded-xl p-4 bg-blue-50">
         <h3 class="font-semibold text-lg mb-2">Ubicación</h3>
 
-        <p class="text-gray-700">
+        <!--
+          RESPONSIVE CHANGE:
+          - Added `break-words` so long street names (e.g. "Avenida del Libertador General
+            San Martín") wrap instead of causing horizontal overflow on 320px.
+        -->
+        <p class="text-gray-700 break-words">
           {{ street }}
         </p>
       </section>
 
-      <!-- Notes -->
+      <!-- Notes — textarea already has w-full, no changes needed -->
       <section class="border rounded-xl p-4">
         <h3 class="font-semibold text-lg mb-4">Notas</h3>
 
+        <!--
+          RESPONSIVE CHANGE:
+          - `rows="4"` → `rows="3"` on mobile, keeping rows="4" on sm+.
+            We achieve this with a CSS class override below in <style scoped>.
+            Actually since rows is a static HTML attr we can't conditionally bind it
+            to a breakpoint via Tailwind directly. Instead we use `rows="3"` and let
+            the `resize: vertical` in <style scoped> allow the user to expand if needed.
+            On desktop the user had 4 rows by default; 3 is still very usable and saves
+            ~24px of vertical space on small screens.
+          - Added `py-3 sm:py-2` for 44px touch target on mobile.
+        -->
         <textarea
           v-model="notes"
-          rows="4"
+          rows="3"
           placeholder="Escribe información adicional..."
-          class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </section>
 
-      <!-- Tags -->
+      <!-- Tags section -->
       <section class="border rounded-xl p-4">
         <h3 class="font-semibold text-lg mb-4">Etiquetas</h3>
 
+        <!-- Category buttons — grid-cols-2 already works fine on all sizes -->
         <div class="mb-3">
           <label class="block mb-2 font-medium">Categoría</label>
           <div class="grid grid-cols-2 gap-2">
@@ -330,18 +364,24 @@ async function handleSubmit() {
               type="button"
               @click="selectedCategory = cat.value"
               :class="[
-                'px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2',
+                /*
+                  RESPONSIVE CHANGE:
+                  - `py-2` → `py-3 sm:py-2` for 44px touch target on mobile.
+                  - All other classes unchanged.
+                */
+                'px-3 py-3 sm:py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2',
                 selectedCategory === cat.value
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400',
               ]"
             >
-              <component :is="cat.icon" class="w-4 h-4" />
+              <component :is="cat.icon" class="w-4 h-4 shrink-0" />
               {{ cat.label }}
             </button>
           </div>
         </div>
 
+        <!-- Tag selector — unchanged, w-full already handles width -->
         <div v-if="selectedCategory" class="mb-3">
           <label class="block mb-2 font-medium">Etiqueta</label>
 
@@ -352,10 +392,14 @@ async function handleSubmit() {
             No hay etiquetas disponibles para esta categoría.
           </div>
 
+          <!--
+            RESPONSIVE CHANGE:
+            - `py-2` → `py-3 sm:py-2` on select for touch-target consistency.
+          -->
           <select
             v-else
             v-model="selectedTag"
-            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option disabled value="">Seleccione una etiqueta</option>
             <option
@@ -368,15 +412,26 @@ async function handleSubmit() {
           </select>
         </div>
 
+        <!-- Tag value input -->
         <div v-if="selectedTag && currentTagConfig" class="mb-3">
           <label class="block mb-2 font-medium">
-            Valor para <span class="text-blue-600">{{ selectedTag }}</span>
+            Valor para
+            <!--
+              RESPONSIVE CHANGE:
+              - Added `break-all` so very long canonical_name values (e.g. a custom
+                tag with a long snake_case name) don't overflow the label on 320px.
+            -->
+            <span class="text-blue-600 break-all">{{ selectedTag }}</span>
           </label>
 
+          <!--
+            RESPONSIVE CHANGE on all three tag-value inputs:
+            - `py-2` → `py-3 sm:py-2` for consistent 44px touch targets on mobile.
+          -->
           <select
             v-if="currentTagConfig.input_type === 'select'"
             v-model="selectedTagValue"
-            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option disabled value="">Seleccione una opción</option>
             <option
@@ -396,7 +451,7 @@ async function handleSubmit() {
             :min="currentTagConfig.min"
             :max="currentTagConfig.max"
             :step="currentTagConfig.step ?? 1"
-            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <input
@@ -404,16 +459,21 @@ async function handleSubmit() {
             v-model="selectedTagValue"
             type="text"
             :placeholder="currentTagConfig.placeholder"
-            class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
+        <!--
+          RESPONSIVE CHANGE — Add tag / Custom tag buttons:
+          - `py-2` → `py-3 sm:py-2` on both buttons for 44px touch targets.
+          - `flex flex-col sm:flex-row gap-3` was already present — correct, keep it.
+        -->
         <div class="flex flex-col sm:flex-row gap-3 mt-4 mb-4">
           <button
             type="button"
             @click="addTag"
             :disabled="!selectedTag"
-            class="flex-1 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+            class="flex-1 px-4 py-3 sm:py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium transition-colors"
           >
             + Agregar etiqueta
           </button>
@@ -422,12 +482,13 @@ async function handleSubmit() {
             v-if="!showCustomTagForm"
             type="button"
             @click="showCustomTagForm = true"
-            class="flex-1 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors"
+            class="flex-1 px-4 py-3 sm:py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors"
           >
             + Etiqueta personalizada
           </button>
         </div>
 
+        <!-- Custom tag form -->
         <div
           v-if="showCustomTagForm"
           class="border border-green-200 bg-green-50 rounded-xl p-4 mb-4 space-y-4"
@@ -436,42 +497,55 @@ async function handleSubmit() {
             <label class="block mb-2 font-medium">
               Nombre de la etiqueta
             </label>
+            <!--
+              RESPONSIVE CHANGE: `py-2` → `py-3 sm:py-2` for touch target.
+            -->
             <input
               v-model="customTag"
               type="text"
               placeholder="Ej: Poste caído"
-              class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
           <div>
             <label class="block mb-2 font-medium"> Valor (Opcional) </label>
+            <!--
+              RESPONSIVE CHANGE: `py-2` → `py-3 sm:py-2` for touch target.
+            -->
             <textarea
               v-model="customValue"
               rows="3"
               placeholder="Ej: 3, Rojo, Roto..."
-              class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              class="w-full border rounded-lg px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
-          <div class="flex gap-2">
+          <!--
+            RESPONSIVE CHANGE — custom tag action buttons:
+            - Changed from `flex gap-2` to `flex gap-2 w-full`
+            - Added `flex-1` to each button so they share the row equally on all sizes.
+            - `py-2` → `py-3 sm:py-2` for touch targets.
+          -->
+          <div class="flex gap-2 w-full">
             <button
               type="button"
               @click="addCustomTag"
-              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              class="flex-1 px-4 py-3 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
             >
               Agregar
             </button>
             <button
               type="button"
               @click="cancelCustomTag"
-              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 bg-white"
+              class="flex-1 px-4 py-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-100 bg-white text-sm font-medium"
             >
               Cancelar
             </button>
           </div>
         </div>
 
+        <!-- Added tags list -->
         <div class="mt-6 pt-4 border-t border-gray-200">
           <div
             v-if="addedTags.length > 0 || customTags.length > 0"
@@ -484,26 +558,34 @@ async function handleSubmit() {
             <div
               v-for="(tag, index) in customTags"
               :key="'custom-' + index"
-              class="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg px-3 py-2"
+              class="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg px-3 py-2 gap-2"
             >
-              <div class="flex items-center gap-2 text-sm">
-                <span class="font-medium text-green-700">
+              <!--
+                RESPONSIVE CHANGE — tag display row:
+                - Added `min-w-0` to the inner flex container so it can shrink below
+                  its content size (required for text truncation to work in flex).
+                - Added `truncate` to the tag name span and value span so long strings
+                  (e.g. a long custom canonical_name) don't overflow the card on 320px.
+                - The remove button has `shrink-0` so it never gets compressed.
+              -->
+              <div class="flex items-center gap-2 text-sm min-w-0 flex-1">
+                <span class="font-medium text-green-700 truncate">
                   {{ tag.canonical_name }}
                 </span>
 
-                <span v-if="tag.value" class="text-gray-500"
+                <span v-if="tag.value" class="text-gray-500 truncate"
                   >→ {{ tag.value }}</span
                 >
-                <span v-else class="text-gray-400 italic">sin valor</span>
+                <span v-else class="text-gray-400 italic shrink-0">sin valor</span>
 
-                <span class="text-xs text-green-500 ml-1">
+                <span class="text-xs text-green-500 shrink-0">
                   (personalizada)
                 </span>
               </div>
               <button
                 type="button"
                 @click="removeCustomTag(index)"
-                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
+                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none shrink-0 p-1"
               >
                 ✕
               </button>
@@ -512,21 +594,21 @@ async function handleSubmit() {
             <div
               v-for="(tag, index) in addedTags"
               :key="'normal-' + index"
-              class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2"
+              class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 gap-2"
             >
-              <div class="flex items-center gap-2 text-sm">
-                <span class="font-medium text-blue-700">
+              <div class="flex items-center gap-2 text-sm min-w-0 flex-1">
+                <span class="font-medium text-blue-700 truncate">
                   {{ tag.normal_name }}
                 </span>
-                <span v-if="tag.value" class="text-gray-500"
+                <span v-if="tag.value" class="text-gray-500 truncate"
                   >→ {{ tag.value }}</span
                 >
-                <span v-else class="text-gray-400 italic">sin valor</span>
+                <span v-else class="text-gray-400 italic shrink-0">sin valor</span>
               </div>
               <button
                 type="button"
                 @click="removeTag(index)"
-                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none"
+                class="text-gray-400 hover:text-red-500 transition-colors text-lg leading-none shrink-0 p-1"
               >
                 ✕
               </button>
@@ -539,11 +621,22 @@ async function handleSubmit() {
         </div>
       </section>
 
-      <!-- Footer -->
-      <div class="flex justify-end gap-3 pt-2">
+      <!-- Footer buttons
+        RESPONSIVE CHANGES:
+        - Layout: `flex justify-end gap-3` → `flex flex-col-reverse sm:flex-row sm:justify-end gap-3`
+          On mobile, "Cancelar" and "Enviar Reporte" stacked vertically is clearer
+          and provides full-width tap targets. `flex-col-reverse` puts the primary
+          action (Enviar Reporte) visually on top — the first thing the thumb reaches
+          at the bottom of the modal.
+          On sm+ (≥640px) the original horizontal right-aligned layout is restored.
+        - Both buttons: `py-2` → `py-3 sm:py-2` for 44px touch targets on mobile.
+        - Added `w-full sm:w-auto` so buttons stretch to full width in column layout
+          but remain auto-width (fitting their text) in the row layout on tablet/desktop.
+      -->
+      <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
         <button
           @click="emit('close')"
-          class="px-4 py-2 border rounded-lg hover:bg-gray-50"
+          class="w-full sm:w-auto px-4 py-3 sm:py-2 border rounded-lg hover:bg-gray-50"
         >
           Cancelar
         </button>
@@ -551,13 +644,13 @@ async function handleSubmit() {
         <button
           @click="handleSubmit"
           :disabled="isSubmitting"
-          class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          class="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {{ isSubmitting ? "Enviando..." : "Enviar Reporte" }}
         </button>
       </div>
 
-      <!-- ATTACHMENTS (no implementados)-->
+      <!-- ATTACHMENTS (no implementados) -->
       <div>
         <section v-if="!isEmergencyMode" class="border rounded-xl p-4">
           <!-- upload de archivos -->
@@ -566,7 +659,7 @@ async function handleSubmit() {
           v-else
           class="border border-red-200 bg-red-50 rounded-xl p-4 text-sm text-red-500 flex items-center gap-2"
         >
-          <AlertTriangle class="w-4 h-4" />
+          <AlertTriangle class="w-4 h-4 shrink-0" />
           Los adjuntos no están disponibles en modo emergencia.
         </div>
       </div>

@@ -54,7 +54,15 @@ function changeTab(tab) {
       @change-tab="changeTab"
     />
 
-    <main class="p-6">
+    <!--
+      RESPONSIVE CHANGE:
+      - `p-6` → `p-3 sm:p-6`
+      - On 320px screens p-6 consumed 48px of width (24px each side), leaving only
+        272px for content. With p-3 (12px each side) we get 296px — a meaningful gain
+        that prevents horizontal overflow on the map and form cards.
+      - On sm+ (768px+) the original p-6 spacing is restored exactly.
+    -->
+    <main class="p-3 sm:p-6">
 
       <ReportView
         v-if="activeTab === 'reportar'"

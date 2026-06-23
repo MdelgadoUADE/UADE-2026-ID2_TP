@@ -93,15 +93,50 @@ onMounted(() => {
     }
   });
 });
+
 function showPopup(lat, lng, street) {
   L.popup()
     .setLatLng([lat, lng])
     .setContent(
+      /*
+        RESPONSIVE CHANGE — popup button styles:
+        The original button had zero inline styles, making it a plain browser-default
+        button with ~24px height — far below the 44px minimum touch target.
+
+        Added inline styles only (no external classes, since Leaflet popups render
+        outside Vue's scoped CSS and outside Tailwind's purge scope):
+        - padding: 10px 16px  → reaches ~44px total height for touch targets
+        - font-size: 14px     → readable on small screens
+        - border-radius: 6px  → matches the app's rounded-lg aesthetic
+        - background/color    → matches the app's blue-600 (#2563eb) primary button
+        - border: none        → removes browser default border
+        - cursor: pointer     → explicit pointer for touch devices
+        - width: 100%         → fills the popup width, easier to tap
+        - margin-top: 8px     → spacing from the street label
+        - font-weight: 600    → matches font-medium/semibold used app-wide
+
+        No logic, event listeners, or behavior changed.
+      */
       `
-      <div>
-        <strong>${street}</strong>
-        <br><br>
-        <button id="crear-reporte-btn">
+      <div style="min-width: 160px; padding: 4px 0;">
+        <strong style="font-size: 14px; display: block; margin-bottom: 4px;">${street}</strong>
+        <button
+          id="crear-reporte-btn"
+          style="
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px 16px;
+            background-color: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            line-height: 1.2;
+          "
+        >
           Crear reporte
         </button>
       </div>
@@ -140,8 +175,60 @@ function showPopup(lat, lng, street) {
 </template>
 
 <style scoped>
+/*
+  RESPONSIVE CHANGE — dynamic map height:
+
+  Original: `height: 500px` — a fixed pixel value that ignores the viewport.
+  Problems on mobile:
+    • Portrait phone (320×568): 500px map leaves ~20px for anything else — barely fits.
+    • Landscape phone (568×320): 500px taller than the viewport — map is clipped and
+      the user can't see the full map without scrolling the entire page awkwardly.
+    • The Leaflet map also needs an explicit height; `height: 100%` alone won't work
+      because its parent containers don't have a fixed height set.
+
+  Solution — three responsive tiers with CSS custom-property math:
+
+  1. Mobile portrait  (<640px, Tailwind `sm` breakpoint):
+     `height: clamp(280px, 55vh, 420px)`
+     — At 320px wide / 568px tall: 55vh = ~312px. Fits well with the header
+       (~60px) + page padding (2×12px) + ReportView title (~60px) = ~144px overhead,
+       leaving 424px for the map. The clamp floor (280px) guarantees a usable map
+       even on very short landscape phones.
+     — clamp ceiling (420px) prevents the map from being too large on tall phones
+       (e.g. iPhone 14 Pro Max portrait at 932px: 55vh = 513px > 420px ceiling, capped).
+
+  2. Tablet (640px–1023px, Tailwind `md`):
+     `height: clamp(380px, 60vh, 560px)`
+     — Generous height for a bigger screen; capped so content below (if any) remains
+       reachable.
+
+  3. Desktop (1024px+, Tailwind `lg`):
+     `height: 560px`
+     — Fixed pixel value close to original (was 500px, now 560px for better use of
+       available space). Desktop users have enough vertical room; a fixed value is
+       simpler and avoids layout jumps on window resize.
+
+  WHY NOT use Tailwind classes here:
+  Tailwind's `h-*` utilities only cover fixed rem values and a few special ones
+  (`h-screen`). The `clamp()` function requires raw CSS. The `<style scoped>` block
+  is the correct place for this, exactly as in the original file.
+
+  NO JS logic, NO Leaflet API, NO event handlers were changed.
+*/
 #map {
-  height: 500px;
   width: 100%;
+  height: clamp(280px, 55vh, 420px);
+}
+
+@media (min-width: 640px) {
+  #map {
+    height: clamp(380px, 60vh, 560px);
+  }
+}
+
+@media (min-width: 1024px) {
+  #map {
+    height: 560px;
+  }
 }
 </style>
