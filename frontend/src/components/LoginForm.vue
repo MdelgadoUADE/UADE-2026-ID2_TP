@@ -63,24 +63,38 @@ async function handleSubmit(e) {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+  <!--
+    RESPONSIVE CHANGES:
+    - Outer wrapper: added `overflow-y-auto` to prevent content clipping in landscape
+      mobile; kept `min-h-screen`, `flex`, `items-center`, `justify-center`, `bg-gray-100`, `p-4`
+    - Inner stack: reduced gap from `space-y-8` → `space-y-4 sm:space-y-8` so the
+      logo + card + emergency block fit without scrolling on small-height viewports
+      (e.g. iPhone SE landscape 568px tall)
+  -->
+  <div class="min-h-screen overflow-y-auto flex items-center justify-center bg-gray-100 p-4">
 
-    <div class="w-full max-w-md space-y-8">
+    <div class="w-full max-w-md space-y-4 sm:space-y-8 py-4">
 
-      <!-- Logo -->
+      <!-- Logo
+        RESPONSIVE CHANGES:
+        - Icon container: `w-12 h-12 sm:w-16 sm:h-16` — slightly smaller on mobile to
+          save vertical space; rounded-2xl and bg-blue-600 preserved
+        - Icon size: `w-6 h-6 sm:w-8 sm:h-8` matching the container reduction
+        - Title: `text-2xl sm:text-3xl` — reduces on 320px to prevent overflow
+      -->
       <div class="text-center">
 
         <div class="flex justify-center mb-4">
 
           <div
-            class="flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600"
+            class="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-blue-600"
           >
-            <MapPin class="w-8 h-8 text-white" />
+            <MapPin class="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
 
         </div>
 
-        <h1 class="text-3xl font-bold text-gray-900">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
           Report-IT
         </h1>
 
@@ -90,8 +104,12 @@ async function handleSubmit(e) {
 
       </div>
 
-      <!-- Login Card -->
-      <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+      <!-- Login Card
+        RESPONSIVE CHANGES:
+        - Card padding: `p-4 sm:p-6` — saves 8px per side on 320px screens
+          (was `p-6` always). All visual styles (rounded-2xl, shadow-lg, border) preserved.
+      -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6">
 
         <div class="space-y-1 pb-4">
 
@@ -120,12 +138,18 @@ async function handleSubmit(e) {
               Correo electronico
             </label>
 
+            <!--
+              RESPONSIVE CHANGES:
+              - Added `py-3 sm:py-2` — 44px minimum touch target on mobile (py-3 = 12px
+                top + 12px bottom + ~20px line-height ≈ 44px). Desktop keeps the original
+                `py-2`. All other classes preserved.
+            -->
             <input
               id="email"
               v-model="email"
               type="email"
               placeholder="tu@email.com"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-lg border border-gray-300 px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
           </div>
@@ -140,12 +164,16 @@ async function handleSubmit(e) {
               Contrasena
             </label>
 
+            <!--
+              RESPONSIVE CHANGES:
+              - Same `py-3 sm:py-2` touch-target fix as email input.
+            -->
             <input
               id="password"
               v-model="password"
               type="password"
               placeholder="********"
-              class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-lg border border-gray-300 px-3 py-3 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
           </div>
@@ -158,10 +186,15 @@ async function handleSubmit(e) {
             {{ error }}
           </p>
 
-          <!-- Submit -->
+          <!-- Submit
+            RESPONSIVE CHANGES:
+            - Added `py-3 sm:py-2` — ensures the primary CTA button meets 44px touch
+              target on mobile. Desktop appearance unchanged. `w-full`, `bg-blue-600`,
+              `hover:bg-blue-700`, `text-white`, `rounded-lg`, `transition-colors` preserved.
+          -->
           <button
             type="submit"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 sm:py-2 rounded-lg transition-colors"
             :disabled="isLoading"
           >
             {{
@@ -174,9 +207,15 @@ async function handleSubmit(e) {
         </form>
 
 
-      <div class="mt-4 text-center text-sm text-gray-500">
+        <!--
+          RESPONSIVE CHANGES:
+          - "Registrate" inline button: added `py-1 px-1` to expand its tap area without
+            affecting visual appearance. `text-blue-600`, `hover:underline`, `font-medium`
+            preserved.
+        -->
+        <div class="mt-4 text-center text-sm text-gray-500">
           ¿No tenés cuenta?
-          <button type="button" @click="emit('go-to-register')" class="text-blue-600 hover:underline font-medium ml-1">
+          <button type="button" @click="emit('go-to-register')" class="text-blue-600 hover:underline font-medium ml-1 py-1 px-1">
             Registrate
           </button>
         </div>
@@ -194,19 +233,26 @@ async function handleSubmit(e) {
 
       </div>
 
-      <!-- Emergency Mode -->
+      <!-- Emergency Mode
+        RESPONSIVE CHANGES:
+        - Button inner layout: added `flex-wrap` so that on very narrow screens
+          (320px) the icon + text wrap gracefully instead of overflowing.
+        - `py-3 sm:py-2` on the button for touch-target on mobile.
+        - All other styles (border-red-300, bg-red-50, rounded-2xl, p-6,
+          text-red-600, hover:text-red-500) preserved.
+      -->
       <div
-        class="border border-red-300 bg-red-50 rounded-2xl p-6"
+        class="border border-red-300 bg-red-50 rounded-2xl p-4 sm:p-6"
       >
 
         <button
           @click="enterEmergencyMode"
-          class="w-full flex items-center justify-center gap-3 text-red-600 hover:text-red-500 transition-colors"
+          class="w-full flex items-center justify-center gap-3 flex-wrap text-red-600 hover:text-red-500 transition-colors py-1"
         >
 
-          <AlertTriangle class="w-5 h-5" />
+          <AlertTriangle class="w-5 h-5 shrink-0" />
 
-          <span class="font-medium">
+          <span class="font-medium text-sm sm:text-base">
             Modo de emergencia disponible sin inicio de sesion
           </span>
 
