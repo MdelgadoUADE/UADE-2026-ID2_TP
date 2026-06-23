@@ -73,16 +73,16 @@ function patch(field, value) {
       highlighted
         ? 'border-emerald-400 bg-emerald-50/30 ring-2 ring-emerald-300 ring-offset-1 shadow-md'
         : isRelated
-          ? 'border-indigo-200 bg-indigo-50/40 ml-6 border-l-4 border-l-indigo-400'
+          ? 'border-indigo-200 bg-indigo-50/40 ml-0 sm:ml-6 border-l-4 border-l-indigo-400'
           : 'border-gray-200 bg-white shadow-sm'
     ]"
   >
     <!-- ── Header ───────────────────────────────────── -->
-    <div class="flex items-start justify-between p-4 gap-3">
+    <div class="flex items-start justify-between p-3 sm:p-4 gap-2">
 
       <!-- Left: usuario + id + dirección + tiempo -->
       <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 flex-wrap">
           <span class="font-semibold text-gray-800 text-sm">
             {{ report.is_anonymous ? 'Anónimo' : (report.user?.username ?? '—') }}
           </span>
@@ -90,9 +90,9 @@ function patch(field, value) {
             class="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
             Gestionando
           </span>
-          <!-- ID badge -->
-          <span class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-            <Hash class="w-2.5 h-2.5" />{{ String(report._id) }}
+          <!-- ID badge: truncado en mobile -->
+          <span class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded max-w-[120px] sm:max-w-none truncate">
+            <Hash class="w-2.5 h-2.5 shrink-0" />{{ String(report._id) }}
           </span>
           <span v-if="report.is_anonymous"
             class="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
@@ -137,7 +137,7 @@ function patch(field, value) {
     </div>
 
     <!-- ── Tags preview ──────────────────────────────── -->
-    <div v-if="tagEntries.length" class="px-4 pb-2 flex flex-wrap gap-1.5">
+    <div v-if="tagEntries.length" class="px-3 sm:px-4 pb-2 flex flex-wrap gap-1.5">
       <span
         v-for="[k, v] in tagEntries.slice(0, expanded ? tagEntries.length : 3)"
         :key="k"
@@ -148,7 +148,7 @@ function patch(field, value) {
       <button
         v-if="tagEntries.length > 3"
         @click="expanded = !expanded"
-        class="text-xs text-blue-600 hover:underline flex items-center gap-0.5"
+        class="text-xs text-blue-600 hover:underline flex items-center gap-0.5 py-0.5"
       >
         <template v-if="!expanded">
           +{{ tagEntries.length - 3 }} más <ChevronDown class="w-3 h-3" />
@@ -160,12 +160,13 @@ function patch(field, value) {
     </div>
 
     <!-- ── Notas (expandible) ────────────────────────── -->
-    <div v-if="expanded && report.notes" class="px-4 pb-2">
+    <div v-if="expanded && report.notes" class="px-3 sm:px-4 pb-2">
       <p class="text-xs text-gray-500 italic bg-gray-50 rounded p-2">{{ report.notes }}</p>
     </div>
 
     <!-- ── Controles RF_24 ───────────────────────────── -->
-    <div class="px-4 pb-4 pt-1 border-t border-gray-100 mt-1 grid grid-cols-3 gap-2">
+    <!-- En mobile: 1 columna apilada. En sm+: 3 columnas (igual que antes) -->
+    <div class="px-3 sm:px-4 pb-4 pt-1 border-t border-gray-100 mt-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
 
       <!-- Estado -->
       <div>
@@ -173,7 +174,7 @@ function patch(field, value) {
         <select
           :value="report.status"
           @change="patch('status', $event.target.value)"
-          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]"
         >
           <option value="active">Activo</option>
           <option value="en_verificacion">En verificación</option>
@@ -189,7 +190,7 @@ function patch(field, value) {
         <select
           :value="report.criticidad ?? ''"
           @change="patch('criticidad', $event.target.value || null)"
-          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]"
         >
           <option value="">— sin clasificar —</option>
           <option value="baja">Baja</option>
@@ -206,7 +207,7 @@ function patch(field, value) {
           :value="report.validez ?? 'pendiente'"
           @change="patch('validez', $event.target.value)"
           :class="[
-            'w-full text-xs border rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400',
+            'w-full text-xs border rounded-lg px-2 py-2 sm:py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]',
             validezColor, 'border-gray-200'
           ]"
         >

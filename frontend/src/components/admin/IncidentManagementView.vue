@@ -67,14 +67,14 @@ async function goToReport(reportId) {
   <div class="space-y-4">
 
     <!-- ── Pestañas ──────────────────────────────────── -->
-    <div class="border-b border-gray-200">
-      <nav class="flex gap-1">
+    <div class="border-b border-gray-200 overflow-x-auto">
+      <nav class="flex gap-1 min-w-max">
         <button
           v-for="tab in TABS"
           :key="tab.id"
           @click="activeTab = tab.id"
           :class="[
-            'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+            'flex items-center gap-2 px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap',
             activeTab === tab.id
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -100,12 +100,13 @@ async function goToReport(reportId) {
           <span class="text-sm font-semibold text-gray-700">Filtros de la cola</span>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- Grilla de filtros: 1 col en mobile, 2 en sm, 4 en md -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Estado</label>
              <select v-model="filters.status"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="active">Activo</option>
               <option value="en_verificacion">En verificación</option>
               <option value="asignado">Asignado</option>
@@ -118,7 +119,7 @@ async function goToReport(reportId) {
           <div>
             <label class="text-xs text-gray-500 block mb-1">Origen</label>
             <select v-model="filters.is_anonymous"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="">Todos</option>
               <option value="false">Solo autenticados</option>
               <option value="true">Solo anónimos</option>
@@ -128,7 +129,7 @@ async function goToReport(reportId) {
           <div>
             <label class="text-xs text-gray-500 block mb-1">Criticidad</label>
             <select v-model="filters.criticidad"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="">Todas</option>
               <option value="critica">Crítica</option>
               <option value="alta">Alta</option>
@@ -140,7 +141,7 @@ async function goToReport(reportId) {
           <div>
             <label class="text-xs text-gray-500 block mb-1">Validez</label>
             <select v-model="filters.validez"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="">Todas</option>
               <option value="pendiente">Pendiente</option>
               <option value="valido">Válido</option>
@@ -152,45 +153,46 @@ async function goToReport(reportId) {
           <div>
             <label class="text-xs text-gray-500 block mb-1">Trust Score Mín</label>
             <input v-model="filters.trust_score_min" type="number" min="0" max="1" step="0.01" placeholder="0.00"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-400" />
           </div>
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Trust Score Máx</label>
             <input v-model="filters.trust_score_max" type="number" min="0" max="1" step="0.01" placeholder="1.00"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-400" />
           </div>
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Tag (clave)</label>
             <input v-model="filters.tag_key" type="text" placeholder="Ej: color_vehiculo"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-400" />
           </div>
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Tag (valor)</label>
             <input v-model="filters.tag_value" type="text" placeholder="Ej: Negro"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-400" />
           </div>
 
           <div>
             <label class="text-xs text-gray-500 block mb-1">Orden</label>
             <select v-model="filters.sort"
-              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400">
               <option value="reciente">Más reciente primero</option>
               <option value="antiguo">Más antiguo primero</option>
             </select>
           </div>
 
+          <!-- Botones Aplicar + Reset -->
           <div class="flex items-end gap-2">
             <button
               @click="applyFilters"
               :disabled="loading"
-              class="flex-1 flex items-center justify-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="flex-1 flex items-center justify-center gap-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-2.5 transition disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px]"
               title="Actualizar reportes desde el servidor"
             >
               <RefreshCw
-                class="w-3.5 h-3.5"
+                class="w-3.5 h-3.5 shrink-0"
                 :class="{ 'animate-spin': loading }"
               />
               Aplicar
@@ -198,16 +200,17 @@ async function goToReport(reportId) {
             <button
               @click="handleReset"
               :disabled="loading"
-              class="flex items-center justify-center gap-1 text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg px-3 py-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="flex items-center justify-center gap-1 text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-lg px-3 py-2.5 transition disabled:opacity-50 disabled:cursor-not-allowed min-h-[42px]"
               title="Restablecer filtros"
             >
               <RotateCcw class="w-3.5 h-3.5" />
             </button>
           </div>
 
+          <!-- Paginación: cantidad -->
           <div>
             <label class="text-xs text-gray-500 block mb-1">Mostrando</label>
-            <div class="flex items-center gap-1.5 text-xs text-gray-400 h-[42px]">
+            <div class="flex items-center gap-1.5 text-xs text-gray-400 min-h-[42px]">
               <input
                 :value="pageSize"
                 type="number"
@@ -223,7 +226,8 @@ async function goToReport(reportId) {
 
         </div>
 
-        <div class="mt-3 flex items-center justify-between gap-2">
+        <!-- Paginación: controles anterior/siguiente -->
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs text-gray-500">
             {{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}
           </span>
@@ -232,7 +236,7 @@ async function goToReport(reportId) {
             <button
               :disabled="!canGoPrevious"
               @click="goToPreviousPage"
-              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600 min-h-[32px]"
             >
               <ChevronLeft class="w-3.5 h-3.5" />
               Anterior
@@ -245,7 +249,7 @@ async function goToReport(reportId) {
             <button
               :disabled="!canGoNext"
               @click="goToNextPage"
-              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
+              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600 min-h-[32px]"
             >
               Siguiente
               <ChevronRight class="w-3.5 h-3.5" />
@@ -263,28 +267,31 @@ async function goToReport(reportId) {
           <span class="text-emerald-600 font-mono ml-2 text-xs break-all">{{ focusedReportId }}</span>
         </div>
         <button @click="focusedReportId = null"
-          class="text-emerald-600 hover:text-emerald-800 transition-colors shrink-0">
+          class="text-emerald-600 hover:text-emerald-800 transition-colors shrink-0 p-1">
           <AlertCircle class="w-4 h-4" />
         </button>
       </div>
 
-      <!-- Cola -->
+      <!-- Cola: loading -->
       <div v-if="loading" class="flex items-center justify-center py-12 text-gray-400 gap-2">
         <RefreshCw class="w-4 h-4 animate-spin" />
         <span class="text-sm">Cargando reportes...</span>
       </div>
 
+      <!-- Cola: error -->
       <div v-else-if="error"
         class="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">
         <AlertCircle class="w-4 h-4 shrink-0" />
         {{ error }}
       </div>
 
+      <!-- Cola: vacía -->
       <div v-else-if="!groups.length"
         class="text-center py-12 text-gray-400 text-sm">
         No hay reportes que coincidan con los filtros seleccionados.
       </div>
 
+      <!-- Cola: reportes -->
       <div v-else class="space-y-3">
         <div
           v-for="group in groups"
@@ -301,9 +308,10 @@ async function goToReport(reportId) {
           </div>
 
           <template v-if="group.is_group && group.related.length">
-            <div class="ml-4 border-l-2 border-indigo-200 pl-2 space-y-2">
+            <!-- Indent reducido en mobile para evitar overflow -->
+            <div class="ml-2 sm:ml-4 border-l-2 border-indigo-200 pl-2 space-y-2">
               <div class="text-xs text-indigo-500 font-medium pl-2 flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.1-1.1" />
                 </svg>

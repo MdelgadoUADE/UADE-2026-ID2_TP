@@ -24,6 +24,9 @@ const pageSize = ref(DEFAULT_PAGE_SIZE)
 const currentPage = ref(1)
 let searchTimeout = null
 
+// Estado para mostrar/ocultar el panel de detalle en mobile
+const showDetail = ref(false)
+
 function normalizePageSize(value) {
   const parsed = parseInt(value, 10)
   if (Number.isNaN(parsed)) return DEFAULT_PAGE_SIZE
@@ -88,12 +91,6 @@ function syncFromCache(scopeKey, page) {
 
 /**
  * Invalida toda la cache de búsqueda en sessionStorage.
- * Se llama cada vez que la vista se monta (entra a la sección de Búsqueda),
- * para evitar mostrar datos obsoletos si el backend/BBDD cambió entre
- * visitas (ej: reinicio de la BBDD, reseed, etc).
- * La cache se sigue usando con normalidad mientras el usuario permanece
- * en esta vista (cambia de página, filtra, etc.), solo se descarta al
- * re-entrar a la sección.
  */
 function invalidateCache() {
   try {
@@ -191,17 +188,10 @@ function handlePageSizeInput(event) {
 
 onMounted(() => {
   pageSize.value = normalizePageSize(pageSize.value)
-  // Cada vez que se entra/vuelve a esta vista, se descarta la cache previa
-  // y se hace un fetch fresco. Esto evita mostrar resultados obsoletos
-  // (ej: tras un reseed/reset de la BBDD) cuando el usuario sale y vuelve
-  // a entrar a la sección de Búsqueda. Dentro de la misma visita, la cache
-  // se sigue usando normalmente (paginación, filtros repetidos, etc).
   invalidateCache()
   fetchReports({ force: true })
 })
 
-// Si el usuario hace logout, limpiar la cache también (mismo patrón que
-// IncidentClustersView), para que la próxima sesión no la herede.
 window.addEventListener('reportit:logout', invalidateCache)
 onBeforeUnmount(() => {
   window.removeEventListener('reportit:logout', invalidateCache)
@@ -290,6 +280,12 @@ function validezColor(v) {
 
 function selectReport(report) {
   selectedReport.value = report
+  // En mobile, al seleccionar un reporte abrimos el panel de detalle
+  showDetail.value = true
+}
+
+function closeDetail() {
+  showDetail.value = false
 }
 
 async function copyId(id) {
@@ -346,390 +342,493 @@ async function updateReportField(field, value) {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 h-full">
+  <!--
+    Layout:
+    - Mobile/Tablet: columna única. La lista ocupa la pantalla.
+      Al seleccionar un reporte, el detalle se superpone como panel (overlay)
+      con botón "Volver a la lista".
+    - Desktop (lg+): grid de 3 columnas, lista izquierda + detalle derecha (igual que antes).
+  -->
+  <div class="relative">
 
-    <!-- ══════════════════════════════════════════════
-         COLUMNA IZQUIERDA — Lista + buscador
-    ═══════════════════════════════════════════════ -->
-    <div class="lg:col-span-1 flex flex-col gap-3">
+    <!-- ════════════════════════════════════════════════
+         LAYOUT DESKTOP: grid side-by-side (lg+)
+    ═════════════════════════════════════════════════ -->
+    <div class="hidden lg:grid lg:grid-cols-3 gap-5">
 
-      <!-- Buscador -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3">
-        <div class="relative">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Buscar por usuario, ID, dirección, tag, notas..."
-            class="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-          />
-          <button v-if="searchQuery" @click="searchQuery = ''"
-            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <X class="w-3.5 h-3.5" />
-          </button>
+      <!-- COLUMNA IZQUIERDA — Lista + buscador -->
+      <div class="lg:col-span-1 flex flex-col gap-3">
+
+        <!-- Buscador -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3">
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Buscar por usuario, ID, dirección, tag, notas..."
+              class="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            />
+            <button v-if="searchQuery" @click="searchQuery = ''"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X class="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div class="mt-2.5">
+            <label class="text-xs text-gray-500 block mb-1.5">Filtrar por estado</label>
+            <select
+              v-model="statusFilter"
+              class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+            >
+              <option value="active">Activo</option>
+              <option value="en_verificacion">En verificación</option>
+              <option value="asignado">Asignado</option>
+              <option value="resolved">Resuelto</option>
+              <option value="archived">Archivado</option>
+              <option value="">Todos los estados</option>
+            </select>
+          </div>
+
+          <div class="mt-2.5">
+            <label class="text-xs text-gray-500 block mb-1.5">Mostrando</label>
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-1.5 text-xs text-gray-400">
+                <input
+                  :value="pageSize"
+                  type="number"
+                  min="1"
+                  :max="MAX_PAGE_SIZE"
+                  step="1"
+                  @change="handlePageSizeInput"
+                  class="w-12 border-0 border-b border-gray-200 bg-transparent px-0 py-0.5 text-center text-xs text-gray-500 focus:outline-none focus:ring-0 focus:border-blue-400"
+                />
+                <span>de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : '' }}</span>
+              </div>
+              <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
+                Buscando...
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="text-xs text-gray-500">
+              {{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}
+            </span>
+            <div class="flex items-center gap-1">
+              <button :disabled="!canGoPrevious" @click="goToPreviousPage"
+                class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600">
+                <ChevronLeft class="w-3.5 h-3.5" /> Anterior
+              </button>
+              <span class="px-2 text-xs text-gray-500">{{ currentPage }} / {{ totalPages }}</span>
+              <button :disabled="!canGoNext" @click="goToNextPage"
+                class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600">
+                Siguiente <ChevronRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Filtro de estado -->
-        <div class="mt-2.5">
-          <label class="text-xs text-gray-500 block mb-1.5">Filtrar por estado</label>
-          <select
-            v-model="statusFilter"
-            class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+        <div v-if="error" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+          {{ error }}
+        </div>
+
+        <div v-if="activeLoading" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+          <div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+          Cargando...
+        </div>
+
+        <div v-else class="space-y-2 overflow-y-auto" style="max-height: calc(100vh - 280px)">
+          <button
+            v-for="report in activeList"
+            :key="report._id"
+            @click="selectReport(report)"
+            :class="[
+              'w-full text-left border rounded-xl p-3 transition-all group',
+              selectedReport?._id === report._id
+                ? 'border-blue-400 bg-blue-50 shadow-sm'
+                : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
+            ]"
           >
-            <option value="active">Activo</option>
-            <option value="en_verificacion">En verificación</option>
-            <option value="asignado">Asignado</option>
-            <option value="resolved">Resuelto</option>
-            <option value="archived">Archivado</option>
-            <option value="">Todos los estados</option>
-          </select>
+            <div class="flex items-start justify-between gap-2">
+              <span :class="['text-sm font-semibold truncate', selectedReport?._id === report._id ? 'text-blue-800' : 'text-gray-800']">
+                {{ report.user?.username || 'Anónimo' }}
+              </span>
+              <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0', statusColor(report.status)]">
+                {{ report.status }}
+              </span>
+            </div>
+            <p class="text-xs font-mono text-gray-400 mt-0.5 truncate">{{ report._id }}</p>
+            <div class="flex items-center gap-1.5 mt-1.5 text-xs text-gray-500">
+              <MapPin class="w-3 h-3 shrink-0 text-gray-400" />
+              <span class="truncate">{{ report.report_location?.address || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
+              <span class="flex items-center gap-1"><Clock3 class="w-3 h-3" />{{ formatDate(report.timestamp) }}</span>
+              <span class="flex items-center gap-1"><Tag class="w-3 h-3" />{{ tagCount(report.tags) }}</span>
+              <span v-if="report.criticidad" :class="['ml-auto px-1.5 py-0.5 rounded text-xs font-medium', criticidadColor(report.criticidad)]">
+                {{ report.criticidad }}
+              </span>
+            </div>
+          </button>
+          <p v-if="!activeLoading && !activeList.length" class="text-center text-sm text-gray-400 py-8">Sin resultados</p>
+        </div>
+      </div>
+
+      <!-- COLUMNA DERECHA — Detalle desktop -->
+      <div class="lg:col-span-2">
+        <div v-if="!selectedReport"
+          class="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
+          <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <FileText class="w-8 h-8 text-gray-300" />
+          </div>
+          <p class="text-base font-semibold text-gray-600">Ningún reporte seleccionado</p>
+          <p class="text-sm text-gray-400 mt-1">Elegí un reporte de la lista para ver su detalle</p>
         </div>
 
-        <div class="mt-2.5">
-          <label class="text-xs text-gray-500 block mb-1.5">Mostrando</label>
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-1.5 text-xs text-gray-400">
-              <input
-                :value="pageSize"
-                type="number"
-                min="1"
-                :max="MAX_PAGE_SIZE"
-                step="1"
-                @change="handlePageSizeInput"
-                class="w-12 border-0 border-b border-gray-200 bg-transparent px-0 py-0.5 text-center text-xs text-gray-500 focus:outline-none focus:ring-0 focus:border-blue-400"
-              />
-              <span>de {{ totalCount }} reporte{{ totalCount !== 1 ? 's' : '' }}</span>
+        <div v-else class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <!-- Header detalle desktop -->
+          <div class="border-b border-gray-100 px-6 py-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+                  <User class="w-5 h-5 text-white" />
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="text-lg font-bold text-gray-900">{{ selectedReport.user?.username || 'Anónimo' }}</h2>
+                    <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor(selectedReport.status)]">{{ selectedReport.status }}</span>
+                    <span v-if="selectedReport.criticidad" :class="['text-xs px-2 py-0.5 rounded-full font-medium', criticidadColor(selectedReport.criticidad)]">{{ selectedReport.criticidad }}</span>
+                    <span v-if="selectedReport.is_anonymous" class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Anónimo</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ selectedReport.user?.email || '—' }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              <Hash class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <span class="text-xs font-mono text-gray-600 flex-1 select-all break-all">{{ selectedReport._id }}</span>
+              <button @click="copyId(selectedReport._id)" :class="['flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all shrink-0', copiedId ? 'bg-green-100 text-green-600' : 'bg-white border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600']">
+                <Check v-if="copiedId" class="w-3 h-3" />
+                <Copy v-else class="w-3 h-3" />
+                {{ copiedId ? 'Copiado' : 'Copiar' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Cuerpo detalle desktop -->
+          <div class="p-6 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="border border-gray-200 rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-2"><MapPin class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Ubicación</span></div>
+                <p class="text-sm text-gray-800 leading-relaxed">{{ selectedReport.report_location?.address || 'Dirección no disponible' }}</p>
+                <p class="text-xs font-mono text-gray-400 mt-1">{{ selectedReport.report_location?.coordinates?.join(', ') }}</p>
+              </div>
+              <div class="border border-gray-200 rounded-xl p-4">
+                <div class="flex items-center gap-2 mb-2"><Clock3 class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Fecha y hora</span></div>
+                <p class="text-sm text-gray-800">{{ new Date(selectedReport.timestamp).toLocaleString('es-AR') }}</p>
+                <div class="mt-2 flex items-center gap-2">
+                  <ShieldAlert class="w-3.5 h-3.5 text-gray-400" />
+                  <span class="text-xs text-gray-500">Trust score: <span class="font-mono font-semibold text-gray-700">{{ selectedReport.trust_score?.toFixed(2) ?? '—' }}</span></span>
+                </div>
+              </div>
             </div>
 
-            <span v-if="searchQuery.trim()" class="text-xs text-blue-600 font-medium">
-              Buscando...
-            </span>
+            <div v-if="selectedReport.notes">
+              <div class="flex items-center gap-2 mb-2"><FileText class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Notas</span></div>
+              <div class="border border-gray-200 rounded-xl p-4 bg-gray-50"><p class="text-sm text-gray-700 leading-relaxed">{{ selectedReport.notes }}</p></div>
+            </div>
+
+            <div v-if="tagEntries(selectedReport.tags).length">
+              <div class="flex items-center gap-2 mb-2"><Tags class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Tags</span><span class="text-xs text-gray-400">({{ tagEntries(selectedReport.tags).length }})</span></div>
+              <div class="flex flex-wrap gap-2">
+                <div v-for="[k, v] in tagEntries(selectedReport.tags)" :key="k" class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5">
+                  <span class="text-xs font-semibold text-blue-700">{{ k }}</span>
+                  <span v-if="v !== null" class="text-xs text-blue-500">→ {{ v }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-xs text-gray-400 italic">Sin tags registrados.</div>
+
+            <div v-if="selectedReport.attachments?.length">
+              <div class="flex items-center gap-2 mb-2"><Paperclip class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Adjuntos</span></div>
+              <div class="space-y-1.5">
+                <div v-for="att in selectedReport.attachments" :key="att" class="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2">
+                  <span class="text-xs font-mono text-gray-600">{{ att }}</span>
+                  <button class="text-xs text-blue-600 hover:text-blue-800 font-medium">Ver</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-5">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">Gestión del Reporte</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Estado</label>
+                  <select :value="selectedReport.status" @change="updateReportField('status', $event.target.value)"
+                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="active">Activo</option>
+                    <option value="en_verificacion">En verificación</option>
+                    <option value="asignado">Asignado</option>
+                    <option value="resolved">Resuelto</option>
+                    <option value="archived">Archivado</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Criticidad</label>
+                  <select :value="selectedReport.criticidad ?? ''" @change="updateReportField('criticidad', $event.target.value || null)"
+                    :class="['w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent', criticidadColor(selectedReport.criticidad)]">
+                    <option value="">— sin clasificar —</option>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Validez</label>
+                  <select :value="selectedReport.validez ?? 'pendiente'" @change="updateReportField('validez', $event.target.value)"
+                    :class="['w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent', validezColor(selectedReport.validez)]">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="valido">Válido</option>
+                    <option value="falso">Falso</option>
+                    <option value="dudoso">Dudoso</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div class="mt-2 flex items-center justify-between gap-2">
-          <span class="text-xs text-gray-500">
-            {{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}
-          </span>
-
-          <div class="flex items-center gap-1">
-            <button
-              :disabled="!canGoPrevious"
-              @click="goToPreviousPage"
-              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
-            >
-              <ChevronLeft class="w-3.5 h-3.5" />
-              Anterior
-            </button>
-
-            <span class="px-2 text-xs text-gray-500">
-              {{ currentPage }} / {{ totalPages }}
-            </span>
-
-            <button
-              :disabled="!canGoNext"
-              @click="goToNextPage"
-              class="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-600 transition disabled:cursor-not-allowed disabled:opacity-50 hover:border-blue-300 hover:text-blue-600"
-            >
-              Siguiente
-              <ChevronRight class="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
       </div>
-
-      <!-- Error -->
-      <div v-if="error"
-        class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
-        {{ error }}
-      </div>
-
-      <!-- Lista de reportes -->
-      <div v-if="activeLoading" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
-        <div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-        Cargando...
-      </div>
-
-      <div v-else class="space-y-2 overflow-y-auto" style="max-height: calc(100vh - 280px)">
-        <button
-          v-for="report in activeList"
-          :key="report._id"
-          @click="selectReport(report)"
-          :class="[
-            'w-full text-left border rounded-xl p-3 transition-all group',
-            selectedReport?._id === report._id
-              ? 'border-blue-400 bg-blue-50 shadow-sm'
-              : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
-          ]"
-        >
-          <!-- Top row -->
-          <div class="flex items-start justify-between gap-2">
-            <span :class="[
-              'text-sm font-semibold truncate',
-              selectedReport?._id === report._id ? 'text-blue-800' : 'text-gray-800'
-            ]">
-              {{ report.user?.username || 'Anónimo' }}
-            </span>
-            <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0', statusColor(report.status)]">
-              {{ report.status }}
-            </span>
-          </div>
-
-          <!-- ID — siempre visible -->
-          <p class="text-xs font-mono text-gray-400 mt-0.5 truncate">{{ report._id }}</p>
-
-          <!-- Address -->
-          <div class="flex items-center gap-1.5 mt-1.5 text-xs text-gray-500">
-            <MapPin class="w-3 h-3 shrink-0 text-gray-400" />
-            <span class="truncate">{{ report.report_location?.address || '—' }}</span>
-          </div>
-
-          <!-- Meta row -->
-          <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
-            <span class="flex items-center gap-1">
-              <Clock3 class="w-3 h-3" />
-              {{ formatDate(report.timestamp) }}
-            </span>
-            <span class="flex items-center gap-1">
-              <Tag class="w-3 h-3" />
-              {{ tagCount(report.tags) }}
-            </span>
-            <span v-if="report.criticidad"
-              :class="['ml-auto px-1.5 py-0.5 rounded text-xs font-medium', criticidadColor(report.criticidad)]">
-              {{ report.criticidad }}
-            </span>
-          </div>
-        </button>
-
-        <p v-if="!activeLoading && !activeList.length" class="text-center text-sm text-gray-400 py-8">
-          Sin resultados
-        </p>
-      </div>
-
     </div>
 
-    <!-- ══════════════════════════════════════════════
-         COLUMNA DERECHA — Detalle del reporte
-    ═══════════════════════════════════════════════ -->
-    <div class="lg:col-span-2">
+    <!-- ════════════════════════════════════════════════
+         LAYOUT MOBILE/TABLET: columna única (< lg)
+    ═════════════════════════════════════════════════ -->
+    <div class="lg:hidden flex flex-col gap-3">
 
-      <!-- Estado vacío -->
-      <div v-if="!selectedReport"
-        class="bg-white border border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-center h-full min-h-[300px]">
-        <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-          <FileText class="w-8 h-8 text-gray-300" />
-        </div>
-        <p class="text-base font-semibold text-gray-600">Ningún reporte seleccionado</p>
-        <p class="text-sm text-gray-400 mt-1">Elegí un reporte de la lista para ver su detalle</p>
-      </div>
+      <!-- Panel de lista (visible cuando NO hay detalle abierto) -->
+      <div v-show="!showDetail">
 
-      <!-- Detalle -->
-      <div v-else class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-
-        <!-- ── Header con ID siempre visible ── -->
-        <div class="border-b border-gray-100 px-6 py-4">
-          <div class="flex items-start justify-between gap-4">
-
-            <!-- Usuario + ID -->
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
-                <User class="w-5 h-5 text-white" />
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h2 class="text-lg font-bold text-gray-900">
-                    {{ selectedReport.user?.username || 'Anónimo' }}
-                  </h2>
-                  <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor(selectedReport.status)]">
-                    {{ selectedReport.status }}
-                  </span>
-                  <span v-if="selectedReport.criticidad"
-                    :class="['text-xs px-2 py-0.5 rounded-full font-medium', criticidadColor(selectedReport.criticidad)]">
-                    {{ selectedReport.criticidad }}
-                  </span>
-                  <span v-if="selectedReport.is_anonymous"
-                    class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
-                    Anónimo
-                  </span>
-                </div>
-                <p class="text-xs text-gray-500 mt-0.5">{{ selectedReport.user?.email || '—' }}</p>
-              </div>
-            </div>
-
-
-          </div>
-
-          <!-- ID del reporte — siempre visible, con botón de copiar -->
-          <div class="mt-3 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-            <Hash class="w-3.5 h-3.5 text-gray-400 shrink-0" />
-            <span class="text-xs font-mono text-gray-600 flex-1 select-all break-all">
-              {{ selectedReport._id }}
-            </span>
-            <button
-              @click="copyId(selectedReport._id)"
-              :class="[
-                'flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all shrink-0',
-                copiedId
-                  ? 'bg-green-100 text-green-600'
-                  : 'bg-white border border-gray-200 text-gray-500 hover:border-blue-300 hover:text-blue-600'
-              ]"
-            >
-              <Check v-if="copiedId" class="w-3 h-3" />
-              <Copy v-else class="w-3 h-3" />
-              {{ copiedId ? 'Copiado' : 'Copiar' }}
+        <!-- Buscador -->
+        <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-3 mb-3">
+          <div class="relative">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Buscar por usuario, ID, dirección..."
+              class="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button v-if="searchQuery" @click="searchQuery = ''"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+              <X class="w-3.5 h-3.5" />
             </button>
           </div>
+
+          <!-- Filtros en fila en mobile -->
+          <div class="grid grid-cols-2 gap-2 mt-2.5">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Estado</label>
+              <select v-model="statusFilter"
+                class="w-full text-sm border border-gray-200 rounded-lg px-2 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="active">Activo</option>
+                <option value="en_verificacion">En verificación</option>
+                <option value="asignado">Asignado</option>
+                <option value="resolved">Resuelto</option>
+                <option value="archived">Archivado</option>
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Mostrando</label>
+              <div class="flex items-center gap-1.5 text-xs text-gray-400 h-[40px]">
+                <input :value="pageSize" type="number" min="1" :max="MAX_PAGE_SIZE" step="1"
+                  @change="handlePageSizeInput"
+                  class="w-12 border-0 border-b border-gray-200 bg-transparent px-0 py-0.5 text-center text-xs text-gray-500 focus:outline-none" />
+                <span>/ {{ totalCount }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Paginación mobile -->
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <span class="text-xs text-gray-500">{{ currentRangeStart }}-{{ currentRangeEnd }} / {{ totalCount }}</span>
+            <div class="flex items-center gap-1">
+              <button :disabled="!canGoPrevious" @click="goToPreviousPage"
+                class="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-600 transition disabled:opacity-50 min-h-[32px]">
+                <ChevronLeft class="w-3.5 h-3.5" /> Ant.
+              </button>
+              <span class="px-1.5 text-xs text-gray-500">{{ currentPage }}/{{ totalPages }}</span>
+              <button :disabled="!canGoNext" @click="goToNextPage"
+                class="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-gray-600 transition disabled:opacity-50 min-h-[32px]">
+                Sig. <ChevronRight class="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- ── Cuerpo del detalle ── -->
-        <div class="p-6 space-y-5">
+        <div v-if="error" class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 mb-3">{{ error }}</div>
 
-          <!-- Ubicación + Fecha -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="border border-gray-200 rounded-xl p-4">
-              <div class="flex items-center gap-2 mb-2">
-                <MapPin class="w-4 h-4 text-blue-600" />
-                <span class="text-sm font-semibold text-gray-700">Ubicación</span>
+        <div v-if="activeLoading" class="flex items-center justify-center py-10 text-gray-400 text-sm gap-2">
+          <div class="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" /> Cargando...
+        </div>
+
+        <div v-else class="space-y-2">
+          <button
+            v-for="report in activeList"
+            :key="report._id"
+            @click="selectReport(report)"
+            :class="[
+              'w-full text-left border rounded-xl p-3 transition-all',
+              selectedReport?._id === report._id
+                ? 'border-blue-400 bg-blue-50'
+                : 'border-gray-200 bg-white hover:border-blue-300'
+            ]"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-sm font-semibold text-gray-800 truncate">{{ report.user?.username || 'Anónimo' }}</span>
+              <span :class="['text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0', statusColor(report.status)]">{{ report.status }}</span>
+            </div>
+            <p class="text-xs font-mono text-gray-400 mt-0.5 truncate">{{ report._id }}</p>
+            <div class="flex items-center gap-1.5 mt-1 text-xs text-gray-500">
+              <MapPin class="w-3 h-3 shrink-0 text-gray-400" />
+              <span class="truncate">{{ report.report_location?.address || '—' }}</span>
+            </div>
+            <div class="flex items-center gap-2 mt-1 text-xs text-gray-400">
+              <span class="flex items-center gap-1"><Clock3 class="w-3 h-3" />{{ formatDate(report.timestamp) }}</span>
+              <span v-if="report.criticidad" :class="['ml-auto px-1.5 py-0.5 rounded text-xs font-medium', criticidadColor(report.criticidad)]">{{ report.criticidad }}</span>
+            </div>
+          </button>
+          <p v-if="!activeLoading && !activeList.length" class="text-center text-sm text-gray-400 py-8">Sin resultados</p>
+        </div>
+      </div>
+
+      <!-- Panel de detalle mobile (ocupa pantalla completa cuando showDetail=true) -->
+      <div v-show="showDetail && selectedReport" class="flex flex-col gap-0">
+
+        <!-- Botón volver -->
+        <button @click="closeDetail"
+          class="flex items-center gap-2 text-sm text-blue-600 font-medium mb-3 py-1">
+          <ChevronLeft class="w-4 h-4" />
+          Volver a la lista
+        </button>
+
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+
+          <!-- Header detalle mobile -->
+          <div class="border-b border-gray-100 px-4 py-4">
+            <div class="flex items-start gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
+                <User class="w-4 h-4 text-white" />
               </div>
-              <p class="text-sm text-gray-800 leading-relaxed">
-                {{ selectedReport.report_location?.address || 'Dirección no disponible' }}
-              </p>
-              <p class="text-xs font-mono text-gray-400 mt-1">
-                {{ selectedReport.report_location?.coordinates?.join(', ') }}
-              </p>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h2 class="text-base font-bold text-gray-900">{{ selectedReport?.user?.username || 'Anónimo' }}</h2>
+                  <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor(selectedReport?.status)]">{{ selectedReport?.status }}</span>
+                  <span v-if="selectedReport?.criticidad" :class="['text-xs px-2 py-0.5 rounded-full font-medium', criticidadColor(selectedReport?.criticidad)]">{{ selectedReport?.criticidad }}</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-0.5 truncate">{{ selectedReport?.user?.email || '—' }}</p>
+              </div>
             </div>
 
-            <div class="border border-gray-200 rounded-xl p-4">
-              <div class="flex items-center gap-2 mb-2">
-                <Clock3 class="w-4 h-4 text-blue-600" />
-                <span class="text-sm font-semibold text-gray-700">Fecha y hora</span>
-              </div>
-              <p class="text-sm text-gray-800">{{ new Date(selectedReport.timestamp).toLocaleString('es-AR') }}</p>
-              <div class="mt-2 flex items-center gap-2">
-                <ShieldAlert class="w-3.5 h-3.5 text-gray-400" />
-                <span class="text-xs text-gray-500">Trust score:
-                  <span class="font-mono font-semibold text-gray-700">{{ selectedReport.trust_score?.toFixed(2) ?? '—' }}</span>
-                </span>
-              </div>
+            <!-- ID + copiar -->
+            <div class="mt-3 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              <Hash class="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              <span class="text-xs font-mono text-gray-600 flex-1 select-all break-all min-w-0">{{ selectedReport?._id }}</span>
+              <button @click="copyId(selectedReport?._id)" :class="['flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-all shrink-0', copiedId ? 'bg-green-100 text-green-600' : 'bg-white border border-gray-200 text-gray-500']">
+                <Check v-if="copiedId" class="w-3 h-3" />
+                <Copy v-else class="w-3 h-3" />
+                {{ copiedId ? 'Copiado' : 'Copiar' }}
+              </button>
             </div>
           </div>
 
-          <!-- Notas -->
-          <div v-if="selectedReport.notes">
-            <div class="flex items-center gap-2 mb-2">
-              <FileText class="w-4 h-4 text-blue-600" />
-              <span class="text-sm font-semibold text-gray-700">Notas</span>
+          <!-- Cuerpo detalle mobile -->
+          <div class="p-4 space-y-4">
+
+            <!-- Ubicación + Fecha: columna única en mobile -->
+            <div class="space-y-3">
+              <div class="border border-gray-200 rounded-xl p-3">
+                <div class="flex items-center gap-2 mb-1.5"><MapPin class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Ubicación</span></div>
+                <p class="text-sm text-gray-800 leading-relaxed">{{ selectedReport?.report_location?.address || 'Dirección no disponible' }}</p>
+                <p class="text-xs font-mono text-gray-400 mt-1">{{ selectedReport?.report_location?.coordinates?.join(', ') }}</p>
+              </div>
+              <div class="border border-gray-200 rounded-xl p-3">
+                <div class="flex items-center gap-2 mb-1.5"><Clock3 class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Fecha y hora</span></div>
+                <p class="text-sm text-gray-800">{{ selectedReport ? new Date(selectedReport.timestamp).toLocaleString('es-AR') : '' }}</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                  <ShieldAlert class="w-3.5 h-3.5 text-gray-400" />
+                  <span class="text-xs text-gray-500">Trust score: <span class="font-mono font-semibold text-gray-700">{{ selectedReport?.trust_score?.toFixed(2) ?? '—' }}</span></span>
+                </div>
+              </div>
             </div>
-            <div class="border border-gray-200 rounded-xl p-4 bg-gray-50">
-              <p class="text-sm text-gray-700 leading-relaxed">{{ selectedReport.notes }}</p>
+
+            <div v-if="selectedReport?.notes">
+              <div class="flex items-center gap-2 mb-2"><FileText class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Notas</span></div>
+              <div class="border border-gray-200 rounded-xl p-3 bg-gray-50"><p class="text-sm text-gray-700 leading-relaxed">{{ selectedReport?.notes }}</p></div>
             </div>
+
+            <div v-if="selectedReport && tagEntries(selectedReport.tags).length">
+              <div class="flex items-center gap-2 mb-2"><Tags class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Tags</span><span class="text-xs text-gray-400">({{ tagEntries(selectedReport.tags).length }})</span></div>
+              <div class="flex flex-wrap gap-2">
+                <div v-for="[k, v] in tagEntries(selectedReport.tags)" :key="k" class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5">
+                  <span class="text-xs font-semibold text-blue-700">{{ k }}</span>
+                  <span v-if="v !== null" class="text-xs text-blue-500">→ {{ v }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="selectedReport?.attachments?.length">
+              <div class="flex items-center gap-2 mb-2"><Paperclip class="w-4 h-4 text-blue-600" /><span class="text-sm font-semibold text-gray-700">Adjuntos</span></div>
+              <div class="space-y-1.5">
+                <div v-for="att in selectedReport.attachments" :key="att" class="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2">
+                  <span class="text-xs font-mono text-gray-600 truncate mr-2">{{ att }}</span>
+                  <button class="text-xs text-blue-600 hover:text-blue-800 font-medium shrink-0">Ver</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gestión: campos apilados en mobile -->
+            <div class="border-t border-gray-200 pt-4">
+              <h3 class="text-sm font-semibold text-gray-700 mb-3">Gestión del Reporte</h3>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Estado</label>
+                  <select :value="selectedReport?.status" @change="updateReportField('status', $event.target.value)"
+                    class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]">
+                    <option value="active">Activo</option>
+                    <option value="en_verificacion">En verificación</option>
+                    <option value="asignado">Asignado</option>
+                    <option value="resolved">Resuelto</option>
+                    <option value="archived">Archivado</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Criticidad</label>
+                  <select :value="selectedReport?.criticidad ?? ''" @change="updateReportField('criticidad', $event.target.value || null)"
+                    :class="['w-full text-sm border rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]', criticidadColor(selectedReport?.criticidad)]">
+                    <option value="">— sin clasificar —</option>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                    <option value="critica">Crítica</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs font-medium text-gray-600 block mb-1.5">Validez</label>
+                  <select :value="selectedReport?.validez ?? 'pendiente'" @change="updateReportField('validez', $event.target.value)"
+                    :class="['w-full text-sm border rounded-lg px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]', validezColor(selectedReport?.validez)]">
+                    <option value="pendiente">Pendiente</option>
+                    <option value="valido">Válido</option>
+                    <option value="falso">Falso</option>
+                    <option value="dudoso">Dudoso</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
           </div>
-
-          <!-- Tags -->
-          <div v-if="tagEntries(selectedReport.tags).length">
-            <div class="flex items-center gap-2 mb-2">
-              <Tags class="w-4 h-4 text-blue-600" />
-              <span class="text-sm font-semibold text-gray-700">Tags</span>
-              <span class="text-xs text-gray-400">({{ tagEntries(selectedReport.tags).length }})</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <div
-                v-for="[k, v] in tagEntries(selectedReport.tags)"
-                :key="k"
-                class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1.5"
-              >
-                <span class="text-xs font-semibold text-blue-700">{{ k }}</span>
-                <span v-if="v !== null" class="text-xs text-blue-500">→ {{ v }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-else class="text-xs text-gray-400 italic">Sin tags registrados.</div>
-
-          <!-- Attachments -->
-          <div v-if="selectedReport.attachments?.length">
-            <div class="flex items-center gap-2 mb-2">
-              <Paperclip class="w-4 h-4 text-blue-600" />
-              <span class="text-sm font-semibold text-gray-700">Adjuntos</span>
-            </div>
-            <div class="space-y-1.5">
-              <div v-for="att in selectedReport.attachments" :key="att"
-                class="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2">
-                <span class="text-xs font-mono text-gray-600">{{ att }}</span>
-                <button class="text-xs text-blue-600 hover:text-blue-800 font-medium">Ver</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- MANAGEMENT FIELDS -->
-          <div class="border-t border-gray-200 pt-5">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">
-              Gestión del Reporte
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              
-              <!-- Estado -->
-              <div>
-                <label class="text-xs font-medium text-gray-600 block mb-1.5">
-                  Estado
-                </label>
-                <select
-                  :value="selectedReport.status"
-                  @change="updateReportField('status', $event.target.value)"
-                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="active">Activo</option>
-                  <option value="en_verificacion">En verificación</option>
-                  <option value="asignado">Asignado</option>
-                  <option value="resolved">Resuelto</option>
-                  <option value="archived">Archivado</option>
-                </select>
-              </div>
-
-              <!-- Criticidad -->
-              <div>
-                <label class="text-xs font-medium text-gray-600 block mb-1.5">
-                  Criticidad
-                </label>
-                <select
-                  :value="selectedReport.criticidad ?? ''"
-                  @change="updateReportField('criticidad', $event.target.value || null)"
-                  :class="[
-                    'w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                    criticidadColor(selectedReport.criticidad)
-                  ]"
-                >
-                  <option value="">— sin clasificar —</option>
-                  <option value="baja">Baja</option>
-                  <option value="media">Media</option>
-                  <option value="alta">Alta</option>
-                  <option value="critica">Crítica</option>
-                </select>
-              </div>
-
-              <!-- Validez -->
-              <div>
-                <label class="text-xs font-medium text-gray-600 block mb-1.5">
-                  Validez
-                </label>
-                <select
-                  :value="selectedReport.validez ?? 'pendiente'"
-                  @change="updateReportField('validez', $event.target.value)"
-                  :class="[
-                    'w-full text-sm border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                    validezColor(selectedReport.validez)
-                  ]"
-                >
-                  <option value="pendiente">Pendiente</option>
-                  <option value="valido">Válido</option>
-                  <option value="falso">Falso</option>
-                  <option value="dudoso">Dudoso</option>
-                </select>
-              </div>
-
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
