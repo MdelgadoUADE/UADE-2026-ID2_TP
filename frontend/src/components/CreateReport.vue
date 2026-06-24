@@ -74,6 +74,20 @@ function closeNotification() {
   }
 }
 
+// manejo de archivos
+const selectedFiles = ref([]);
+const fileInput = ref(null);
+
+function handleFileSelect(event) {
+  const files = Array.from(event.target.files);
+  selectedFiles.value = [...selectedFiles.value, ...files];
+  if (fileInput.value) fileInput.value.value = "";
+}
+
+function removeFile(index) {
+  selectedFiles.value.splice(index, 1);
+}
+
 // Computed que devuelve la config del tag actualmente seleccionado
 const currentTagConfig = computed(() => {
   if (!selectedTag.value) return null;
@@ -189,6 +203,38 @@ async function handleSubmit() {
       return acc;
     }, {});
 
+    //subida de archivos a MinIO
+    const uploadedMediaFiles = [];
+
+    for (const file of selectedFiles.value) {
+      // 1 pedida a backend para obtener URL
+      const urlResponse = await fetch(
+        "http://localhost:3000/files/upload-url",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contentType: file.type,
+            originalName: file.name,
+          }),
+        },
+      );
+
+      const { uploadUrl, fileName } = await urlResponse.json();
+
+      // enviar directo a MinIO con URL
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      // guardar nombre unico de archivo en BBDD
+      uploadedMediaFiles.push(fileName);
+    }
+
     /* Creando tag si no existe */
     for (const tag of customTags.value) {
       const tagResponse = await fetch("http://localhost:3000/tags", {
@@ -228,6 +274,7 @@ async function handleSubmit() {
               email: currentUser.value.email,
             }
           : null,
+        attachments: uploadedMediaFiles,
         is_anonymous: !currentUser.value,
         notes: notes.value,
         tags: tagsObject,
@@ -261,6 +308,7 @@ async function handleSubmit() {
     notes.value = "";
     selectedTagValue.value = "";
     addedTags.value = [];
+    selectedFiles.value = [];
   } catch (error) {
     console.error(error);
 
@@ -576,7 +624,9 @@ async function handleSubmit() {
                 <span v-if="tag.value" class="text-gray-500 truncate"
                   >→ {{ tag.value }}</span
                 >
-                <span v-else class="text-gray-400 italic shrink-0">sin valor</span>
+                <span v-else class="text-gray-400 italic shrink-0"
+                  >sin valor</span
+                >
 
                 <span class="text-xs text-green-500 shrink-0">
                   (personalizada)
@@ -603,7 +653,9 @@ async function handleSubmit() {
                 <span v-if="tag.value" class="text-gray-500 truncate"
                   >→ {{ tag.value }}</span
                 >
-                <span v-else class="text-gray-400 italic shrink-0">sin valor</span>
+                <span v-else class="text-gray-400 italic shrink-0"
+                  >sin valor</span
+                >
               </div>
               <button
                 type="button"
@@ -620,6 +672,57 @@ async function handleSubmit() {
           </p>
         </div>
       </section>
+
+      <!-- ATTACHMENTS -->
+      <div>
+        <section v-if="!isEmergencyMode" class="border rounded-xl p-4">
+          <h3 class="font-semibold text-lg mb-4">Adjuntos</h3>
+
+          <input
+            type="file"
+            ref="fileInput"
+            @change="handleFileSelect"
+            accept="image/*,video/*,audio/*"
+            multiple
+            class="hidden"
+          />
+
+          <button
+            type="button"
+            @click="$refs.fileInput.click()"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm flex items-center gap-2"
+          >
+            + Seleccionar Archivos
+          </button>
+
+          <div v-if="selectedFiles.length > 0" class="mt-4 space-y-2">
+            <div
+              v-for="(file, index) in selectedFiles"
+              :key="index"
+              class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-sm"
+            >
+              <span class="truncate max-w-[250px] font-medium text-blue-700">
+                {{ file.name }}
+              </span>
+              <button
+                type="button"
+                @click="removeFile(index)"
+                class="text-gray-400 hover:text-red-500 font-bold text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div
+          v-else
+          class="border border-red-200 bg-red-50 rounded-xl p-4 text-sm text-red-500 flex items-center gap-2"
+        >
+          <AlertTriangle class="w-4 h-4 shrink-0" />
+          Los adjuntos no están disponibles en modo emergencia.
+        </div>
+      </div>
 
       <!-- Footer buttons
         RESPONSIVE CHANGES:
@@ -648,20 +751,6 @@ async function handleSubmit() {
         >
           {{ isSubmitting ? "Enviando..." : "Enviar Reporte" }}
         </button>
-      </div>
-
-      <!-- ATTACHMENTS (no implementados) -->
-      <div>
-        <section v-if="!isEmergencyMode" class="border rounded-xl p-4">
-          <!-- upload de archivos -->
-        </section>
-        <div
-          v-else
-          class="border border-red-200 bg-red-50 rounded-xl p-4 text-sm text-red-500 flex items-center gap-2"
-        >
-          <AlertTriangle class="w-4 h-4 shrink-0" />
-          Los adjuntos no están disponibles en modo emergencia.
-        </div>
       </div>
     </div>
 

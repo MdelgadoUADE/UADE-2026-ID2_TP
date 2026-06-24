@@ -2,28 +2,29 @@ const express = require("express");
 const cors = require("cors");
 const connectMongo = require("./config/mongo");
 const { connectPostgres } = require("./config/postgres");
-const { runSeed } = require('./config/seed')  // script para mock data en DB
+const { runSeed } = require("./config/seed"); // script para mock data en DB
 
 const reportsRoutes = require("./routes/reports");
 const reportTags = require("./routes/tags");
 const mapFunctions = require("./utils/mapFunctions");
 const authRoutes = require("./routes/auth");
+const filesRoutes = require("./routes/files");
 
 const app = express();
-
 
 app.use(cors());
 app.use(express.json());
 app.use("/reports", reportsRoutes);
 app.use("/map", mapFunctions);
 app.use("/tags", reportTags);
-app.use("/auth", authRoutes); 
+app.use("/auth", authRoutes);
+app.use("/files", filesRoutes);
 
 const PORT = 3000;
 
 async function startServer() {
   await connectMongo();
-  await connectPostgres(); 
+  await connectPostgres();
   await runSeed();
 
   app.listen(PORT, () => {

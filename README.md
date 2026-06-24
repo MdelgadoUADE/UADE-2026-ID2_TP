@@ -2,9 +2,17 @@
 
 Aplicación web desarrollada utilizando Vue, Node.js, MongoDB y PostgreSQL.
 El proyecto utiliza Docker para garantizar un entorno reproducible y evitar problemas de dependencias.
+
 ---
 
+# IMPORTANT
+
+- para que el servicio de archivos funcione es necesario crear el bucket donde se alojaran los archivos.
+- antes de ingresar al frontend ir a http://localhost:9001 (usuario/contraseña: minioadmin)
+- en buckets crear la bucket y nombrarla media-uploads
+
 # ⌨️​ Test Credentials
+
 - email: testuser@reportit.com
 - password: test1234
 - email: testadmin@reportit.com
@@ -24,14 +32,13 @@ El proyecto utiliza Docker para garantizar un entorno reproducible y evitar prob
 
 Antes de ejecutar el proyecto, asegurarse de tener instalado:
 
-| Software | Version |
-|---|---|
-| Docker Desktop | 4.x+ |
-| Node.js | 20.x |
-| Git | Latest |
+| Software       | Version |
+| -------------- | ------- |
+| Docker Desktop | 4.x+    |
+| Node.js        | 20.x    |
+| Git            | Latest  |
 
 ## Notes
-
 
 - > ⚠️ Docker Desktop debe estar ejecutándose antes de levantar el entorno.
 - Node.js se utiliza únicamente para tareas de desarrollo local y tooling.
@@ -89,6 +96,7 @@ $env:SEED_DEMO="true"; $env:SEED_REPORTS="5000"; docker compose up --build
 ```
 
 **Qué se genera:**
+
 - ✅ 5,000 reportes distribuidos en Buenos Aires y Córdoba
 - ✅ 25 clusters correlacionados detectables automáticamente
 - ✅ 11 tipos de incidentes con tags dinámicos
@@ -96,18 +104,18 @@ $env:SEED_DEMO="true"; $env:SEED_REPORTS="5000"; docker compose up --build
 - ✅ Estados, criticidad, validez y trust scores
 
 **Documentación completa:**
+
 - [Guía rápida](backend/SEED_README.md)
 - [Documentación detallada](SEED_DEMO_GUIDE.md)
 
-
 ## 2. Available Services
 
-| Service | URL / Port |
-|---|---|
-| Frontend | http://localhost:5173 |
-| Backend | http://localhost:3000 |
-| MongoDB | localhost:27017 |
-| PostgreSQL | localhost:5432 |
+| Service    | URL / Port            |
+| ---------- | --------------------- |
+| Frontend   | http://localhost:5173 |
+| Backend    | http://localhost:3000 |
+| MongoDB    | localhost:27017       |
+| PostgreSQL | localhost:5432        |
 
 ---
 
@@ -138,7 +146,6 @@ docker compose down -v
 └── README.md
 ```
 
-
 ---
 
 # 🐳 Docker Notes
@@ -167,6 +174,7 @@ Verificar que los siguientes puertos no estén siendo utilizados:
 - 5432
 
 ## Comandos útiles
+
 ```bash
 docker compose ps
 docker compose logs
@@ -180,9 +188,7 @@ docker compose exec mongo mongosh # Ejeutar comandos dentro (ej: show dbs)
 
 ```
 
-
 ---
-
 
 # 🍃 MongoDB Compass
 

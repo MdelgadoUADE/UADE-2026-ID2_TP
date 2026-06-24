@@ -1,5 +1,4 @@
 services:
-
   backend:
     build: ./backend
     ports:
@@ -10,10 +9,15 @@ services:
     depends_on:
       - mongo
       - db
+      - minio
     environment:
       - SEED_DEMO=true
       - SEED_REPORTS=5000
       - SEED_CLEAR=false
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
 
   frontend:
     build: ./frontend
@@ -41,12 +45,25 @@ services:
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: app_db
       TZ: UTC
-      PGTZ: UTC 
+      PGTZ: UTC
     ports:
       - "5432:5432"
 
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000" # API Port
+      - "9001:9001" # Web Dashboard Port
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
 volumes:
   mongo_data:
+  minio_data:
 
 # docker compose up --build
 # docker compose down -v   (para bajar volumen tambien)
