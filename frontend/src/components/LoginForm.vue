@@ -8,6 +8,8 @@ import {
   AlertTriangle
 } from 'lucide-vue-next'
 
+import { API_URL } from '../api'
+
 const emit = defineEmits(['login-success', 'go-to-register', 'enter-emergency'])
 const email = ref('')
 const password = ref('')
@@ -16,7 +18,7 @@ const isLoading = ref(false)
 
 async function login(emailValue, passwordValue) {
   try {
-    const response = await fetch('http://localhost:3000/auth/login', {
+    const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: emailValue, password: passwordValue })

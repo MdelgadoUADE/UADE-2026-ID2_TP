@@ -8,6 +8,8 @@ import CreateReport from "./CreateReport.vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import { API_URL } from '../api.js'
+
 let map;
 
 const showReportModal = ref(false);
@@ -81,7 +83,7 @@ onMounted(() => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/map/reverse-geocode?lat=${lat}&lng=${lng}`,
+        `${API_URL}/map/reverse-geocode?lat=${lat}&lng=${lng}`,
       );
 
       const data = await response.json();

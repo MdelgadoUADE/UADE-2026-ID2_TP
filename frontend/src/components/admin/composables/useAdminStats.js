@@ -1,6 +1,7 @@
 import { ref } from 'vue'
+import { API_URL } from '../../../api.js'
 
-const BASE = 'http://localhost:3000/reports/admin/stats'
+const BASE = `${API_URL}/reports/admin/stats`
 
 export function useAdminStats() {
 

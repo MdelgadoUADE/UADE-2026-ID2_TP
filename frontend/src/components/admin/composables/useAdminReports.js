@@ -1,9 +1,9 @@
-import { ref, reactive, computed } from 'vue'
+import { API_URL } from '../../../api.js'
 
-const BASE = 'http://localhost:3000/reports'
 const CACHE_KEY = 'admin-pending-reports-cache-v1'
 const DEFAULT_PAGE_SIZE = 100
 const MAX_PAGE_SIZE = 500
+const BASE = `${API_URL}/reports`
 
 export function useAdminReports() {
   const groups = ref([])

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
+import { API_URL } from '../../../api'
 
-const BASE = 'http://localhost:3000/reports/admin/temporal-stats'
+const BASE = `${API_URL}/reports/admin/temporal-stats`
 
 export function useTemporalStats() {
   const data    = ref(null)   // { tendencia, matriz_dia_hora, totales, filtros }

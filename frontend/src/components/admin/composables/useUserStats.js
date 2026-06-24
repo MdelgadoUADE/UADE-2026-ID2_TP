@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
+import { API_URL } from '../../../api'
 
-const BASE = 'http://localhost:3000/reports/admin/user-stats'
+const BASE = `${API_URL}/reports/admin/user-stats`
 const DEFAULT_PAGE_SIZE = 25
 const MAX_PAGE_SIZE = 200
 
