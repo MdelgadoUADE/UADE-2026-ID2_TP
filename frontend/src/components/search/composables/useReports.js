@@ -2,8 +2,7 @@ import {
   ref,
   computed
 } from 'vue'
-import { API_URL } from '../../../api.js'
-
+import { API_URL } from '../../../api'
 
 export function useReports() {
 
@@ -30,17 +29,8 @@ export function useReports() {
 
     try {
 
-      const response = await fetch(
-        `${API_URL}/reports/search`
-      )
-
-      if (!response.ok) {
-
-        throw new Error(
-          'Error obteniendo reportes'
-        )
-      }
-
+      const response = await fetch(`${API_URL}/reports/search`)
+      if (!response.ok) throw new Error('Error obteniendo reportes')
       const data = await response.json()
       if (!data.success) throw new Error(data.message)
       reports.value = data.reports
