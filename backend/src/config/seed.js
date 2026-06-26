@@ -32,7 +32,7 @@ const seedUsers = [
     surname:  'Rodríguez',
     email:    'maria.rodriguez@example.com',
     password: 'demo1234',
-    role:     'user'
+    role:     'admin'
   },
   {
     username: 'Carlos',
