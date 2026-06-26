@@ -190,7 +190,12 @@ function generateRealisticTimestamp() {
   }
   
   timestamp.setHours(Math.floor(hour), randomInt(0, 59), randomInt(0, 59));
-  
+
+  // Never exceed the current moment
+  if (timestamp > now) {
+    return new Date(now.getTime());
+  }
+
   return timestamp;
 }
 
