@@ -495,9 +495,11 @@ function generateClusteredReports() {
     console.log(`  Cluster ${i + 1}/${CONFIG.CLUSTER_COUNT}: ${clusterSize} reportes de "${incidentData.type}" en ${zone.zone}`);
     
     for (let j = 0; j < clusterSize; j++) {
-      // Variación temporal: ±90 minutos
-      const timeVariation = (Math.random() - 0.5) * 2 * 90 * 60 * 1000;
-      const timestamp = new Date(baseTimestamp.getTime() + timeVariation);
+      // Variación temporal: hasta -90 minutos (nunca hacia el futuro)
+      const timeVariation = Math.random() * 90 * 60 * 1000;
+      const rawTimestamp = new Date(baseTimestamp.getTime() - timeVariation);
+      const now = new Date();
+      const timestamp = rawTimestamp > now ? new Date(now.getTime()) : rawTimestamp;
       
       // Variación espacial: ±300m (≈0.002 grados)
       const latVariation = (Math.random() - 0.5) * 0.004;
