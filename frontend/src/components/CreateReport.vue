@@ -204,7 +204,7 @@ async function handleSubmit() {
       return acc;
     }, {});
 
-    //subida de archivos a MinIO
+    // subida de archivos a MinIO
     const uploadedMediaFiles = [];
 
     for (const file of selectedFiles.value) {
@@ -232,8 +232,12 @@ async function handleSubmit() {
         body: file,
       });
 
-      // guardar nombre unico de archivo en BBDD
-      uploadedMediaFiles.push(fileName);
+      // guardar objeto de metadata en BBDD
+      uploadedMediaFiles.push({
+        original_name: file.name,
+        file_name: fileName,
+        mime_type: file.type,
+      });
     }
 
     /* Creando tag si no existe */
@@ -275,7 +279,7 @@ async function handleSubmit() {
               email: currentUser.value.email,
             }
           : null,
-        attachments: uploadedMediaFiles,
+        attachments: uploadedMediaFiles, // Ahora manda un array de objetos
         is_anonymous: !currentUser.value,
         notes: notes.value,
         tags: tagsObject,
