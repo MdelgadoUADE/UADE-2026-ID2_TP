@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const ReportSchema = new mongoose.Schema(
   {
@@ -6,58 +6,64 @@ const ReportSchema = new mongoose.Schema(
       user_id: String,
       username: String,
       surname: String,
-      email: String
+      email: String,
     },
 
     timestamp: {
       type: Date,
-      default: Date.now
+      default: Date.now,
     },
 
     notes: String,
 
-    attachments: [String],
+    attachments: [
+      {
+        original_name: String,
+        file_name: String, // The UUID generated for S3
+        mime_type: String, // Optional, but helpful for the future
+      },
+    ],
 
     tags: {
-      type: mongoose.Schema.Types.Mixed
+      type: mongoose.Schema.Types.Mixed,
     },
 
     report_location: {
       type: {
         type: String,
-        enum: ['Point'],
-        required: true
+        enum: ["Point"],
+        required: true,
       },
 
       coordinates: {
         type: [Number],
-        required: true
+        required: true,
       },
 
       address: {
         type: String,
-        default: ''
-      }
+        default: "",
+      },
     },
 
     status: {
       type: String,
-      enum: ['active', 'en_verificacion', 'asignado', 'resolved', 'archived'],
-      default: 'active'
+      enum: ["active", "en_verificacion", "asignado", "resolved", "archived"],
+      default: "active",
     },
 
     // RF_24: clasificación por criticidad
     criticidad: {
       type: String,
-      enum: ['baja', 'media', 'alta', 'critica', null],
-      default: null
+      enum: ["baja", "media", "alta", "critica", null],
+      default: null,
     },
 
     // RF_24: clasificación por validez
     validez: {
       type: String,
-      enum: ['pendiente', 'valido', 'falso', 'dudoso'],
-      default: 'pendiente'
+      enum: ["pendiente", "valido", "falso", "dudoso"],
+      default: "pendiente",
     },
 
     is_anonymous: Boolean,
@@ -68,7 +74,7 @@ const ReportSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       max: 1,
-      default: null
+      default: null,
     },
 
     trust_score_metadata: {
@@ -79,22 +85,22 @@ const ReportSchema = new mongoose.Schema(
         report_completeness: Number,
         user_history: Number,
         related_reports: Number,
-        time_consistency: Number
-      }
-    }
+        time_consistency: Number,
+      },
+    },
   },
   {
-    timestamps: true
-  }
+    timestamps: true,
+  },
 );
 
 ReportSchema.index({
-  report_location: '2dsphere'
+  report_location: "2dsphere",
 });
 
 // Índices para optimizar consultas de trust score
 ReportSchema.index({ trust_score: 1 });
-ReportSchema.index({ 'user.user_id': 1, timestamp: -1 });
+ReportSchema.index({ "user.user_id": 1, timestamp: -1 });
 ReportSchema.index({ validez: 1 });
 
-module.exports = mongoose.model('Report', ReportSchema);
+module.exports = mongoose.model("Report", ReportSchema);

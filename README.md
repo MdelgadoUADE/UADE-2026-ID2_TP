@@ -24,6 +24,7 @@ El proyecto utiliza Docker para garantizar un entorno reproducible y evitar prob
 - Backend: Node.js + Express
 - Database (SQL): PostgreSQL
 - Database (NoSQL): MongoDB
+- Database (archivos): S3 + MinIO (simulacion de S3)
 - Containerization: Docker & Docker Compose
 
 ---
