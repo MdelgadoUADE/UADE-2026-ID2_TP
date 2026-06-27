@@ -146,16 +146,14 @@ function patch(field, value) {
 </script>
 
 <template>
-  <div
-    :class="[
-      'rounded-xl border transition-all',
-      highlighted
-        ? 'border-emerald-400 bg-emerald-50/30 ring-2 ring-emerald-300 ring-offset-1 shadow-md'
-        : isRelated
-          ? 'border-indigo-200 bg-indigo-50/40 ml-0 sm:ml-6 border-l-4 border-l-indigo-400'
-          : 'border-gray-200 bg-white shadow-sm',
-    ]"
-  >
+  <div :class="[
+    'rounded-xl border transition-all',
+    highlighted
+      ? 'border-emerald-400 bg-emerald-50/30 ring-2 ring-emerald-300 ring-offset-1 shadow-md'
+      : isRelated
+        ? 'border-indigo-200 bg-indigo-50/40 ml-0 sm:ml-6 border-l-4 border-l-indigo-400'
+        : 'border-gray-200 bg-white shadow-sm',
+  ]">
     <!-- ── Header ───────────────────────────────────── -->
     <div class="flex items-start justify-between p-3 sm:p-4 gap-2">
       <!-- Left: usuario + id + dirección + tiempo -->
@@ -166,29 +164,28 @@ function patch(field, value) {
               report.is_anonymous ? "Anónimo" : (report.user?.username ?? "—")
             }}
           </span>
-          <span
-            v-if="highlighted"
-            class="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium"
-          >
+          <span v-if="highlighted"
+            class="inline-flex items-center gap-1 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
             Gestionando
           </span>
           <!-- ID badge: truncado en mobile -->
           <span
-            class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded max-w-[120px] sm:max-w-none truncate"
-          >
+            class="inline-flex items-center gap-0.5 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded max-w-[120px] sm:max-w-none truncate">
             <Hash class="w-2.5 h-2.5 shrink-0" />{{ String(report._id) }}
           </span>
-          <span
-            v-if="report.is_anonymous"
-            class="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"
-          >
+          <span v-if="report.is_anonymous"
+            class="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
             <UserX class="w-3 h-3" /> anónimo
           </span>
-          <span
-            v-if="isRelated"
-            class="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full"
-          >
+          <span v-if="isRelated"
+            class="inline-flex items-center gap-1 text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">
             <Link2 class="w-3 h-3" /> relacionado
+          </span>
+          <!-- Badge de adjuntos -->
+          <span v-if="hasAttachments"
+            class="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">
+            <Paperclip class="w-3 h-3" /> {{ report.attachments.length }} adjunto{{ report.attachments.length > 1 ? 's'
+              : '' }}
           </span>
         </div>
 
@@ -206,93 +203,60 @@ function patch(field, value) {
 
       <!-- Right: trust score + badges estado actual -->
       <div class="flex flex-col items-end gap-1.5 shrink-0">
-        <TrustScoreBadge
-          v-if="report.trust_score !== null && report.trust_score !== undefined"
-          :trust-score="report.trust_score"
-          size="small"
-          :show-label="false"
-        />
-        <div
-          v-else
-          class="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full"
-        >
+        <TrustScoreBadge v-if="report.trust_score !== null && report.trust_score !== undefined"
+          :trust-score="report.trust_score" size="small" :show-label="false" />
+        <div v-else class="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
           <ShieldAlert class="w-3 h-3" />
           Sin calcular
         </div>
-        <span
-          :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor]"
-        >
+        <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusColor]">
           {{ STATUS_LABELS[report.status] ?? report.status }}
         </span>
-        <span
-          v-if="report.criticidad"
-          :class="[
-            'text-xs px-2 py-0.5 rounded-full font-medium',
-            criticidadColor,
-          ]"
-        >
+        <span v-if="report.criticidad" :class="[
+          'text-xs px-2 py-0.5 rounded-full font-medium',
+          criticidadColor,
+        ]">
           {{ report.criticidad }}
         </span>
       </div>
     </div>
 
     <!-- ── Tags preview ──────────────────────────────── -->
-    <div
-      v-if="tagEntries.length"
-      class="px-3 sm:px-4 pb-2 flex flex-wrap gap-1.5"
-    >
-      <span
-        v-for="[k, v] in tagEntries.slice(0, expanded ? tagEntries.length : 3)"
-        :key="k"
-        class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-      >
+    <div v-if="tagEntries.length" class="px-3 sm:px-4 pb-2 flex flex-wrap gap-1.5">
+      <span v-for="[k, v] in tagEntries.slice(0, expanded ? tagEntries.length : 3)" :key="k"
+        class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
         {{ k }}: {{ v }}
       </span>
-      <button
-        v-if="tagEntries.length > 3"
-        @click="expanded = !expanded"
-        class="text-xs text-blue-600 hover:underline flex items-center gap-0.5 py-0.5"
-      >
+      <button v-if="tagEntries.length > 3" @click="expanded = !expanded"
+        class="text-xs text-blue-600 hover:underline flex items-center gap-0.5 py-0.5">
         <template v-if="!expanded">
-          +{{ tagEntries.length - 3 }} más <ChevronDown class="w-3 h-3" />
+          +{{ tagEntries.length - 3 }} más
+          <ChevronDown class="w-3 h-3" />
         </template>
-        <template v-else> menos <ChevronUp class="w-3 h-3" /> </template>
+        <template v-else> menos
+          <ChevronUp class="w-3 h-3" />
+        </template>
       </button>
     </div>
 
     <!-- ── Attachments ──────────────────────────────── -->
-    <div
-      v-if="report.attachments?.length"
-      class="px-3 sm:px-4 pb-2 flex flex-wrap gap-2"
-    >
-      <button
-        v-for="(attachment, index) in report.attachments"
-        :key="getStoredFileName(attachment) || index"
-        @click="openAttachment(attachment)"
-        :class="[
+    <div v-if="report.attachments?.length" class="px-3 sm:px-4 pb-2 flex flex-wrap gap-2">
+      <button v-for="(attachment, index) in report.attachments" :key="getStoredFileName(attachment) || index"
+        @click="openAttachment(attachment)" :class="[
           'inline-flex items-center gap-1.5 text-xs border px-3 py-1.5 rounded-full transition-colors font-medium shadow-sm cursor-pointer max-w-full',
           getAttachmentInfo(attachment).colorClass,
-        ]"
-        :title="
-          getAttachmentInfo(attachment).name +
+        ]" :title="getAttachmentInfo(attachment).name +
           (getAttachmentInfo(attachment).ext
             ? '.' + getAttachmentInfo(attachment).ext
             : '')
-        "
-      >
-        <component
-          :is="getAttachmentInfo(attachment).icon"
-          class="w-3 h-3 shrink-0"
-        />
+          ">
+        <component :is="getAttachmentInfo(attachment).icon" class="w-3 h-3 shrink-0" />
 
         <span class="truncate max-w-[120px]">{{
           getAttachmentInfo(attachment).name
         }}</span>
-        <span
-          v-if="getAttachmentInfo(attachment).ext"
-          class="opacity-75 shrink-0"
-          >.{{ getAttachmentInfo(attachment).ext }}</span
-        >
+        <span v-if="getAttachmentInfo(attachment).ext" class="opacity-75 shrink-0">.{{ getAttachmentInfo(attachment).ext
+        }}</span>
       </button>
     </div>
 
@@ -303,18 +267,18 @@ function patch(field, value) {
       </p>
     </div>
 
+    <!-- ── Adjuntos (expandible) — incluye audio ────── -->
+    <div v-if="expanded && hasAttachments" class="px-3 sm:px-4 pb-4 pt-2 border-t border-gray-100">
+      <ReportAttachmentList :attachments="report.attachments" />
+    </div>
+
     <!-- ── Controles RF_24 ───────────────────────────── -->
-    <div
-      class="px-3 sm:px-4 pb-4 pt-1 border-t border-gray-100 mt-1 grid grid-cols-1 sm:grid-cols-3 gap-2"
-    >
+    <div class="px-3 sm:px-4 pb-4 pt-1 border-t border-gray-100 mt-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
       <!-- Estado -->
       <div>
         <label class="text-xs text-gray-400 block mb-1">Estado</label>
-        <select
-          :value="report.status"
-          @change="patch('status', $event.target.value)"
-          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]"
-        >
+        <select :value="report.status" @change="patch('status', $event.target.value)"
+          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]">
           <option value="active">Activo</option>
           <option value="en_verificacion">En verificación</option>
           <option value="asignado">Asignado</option>
@@ -326,11 +290,8 @@ function patch(field, value) {
       <!-- Criticidad RF_24 -->
       <div>
         <label class="text-xs text-gray-400 block mb-1">Criticidad</label>
-        <select
-          :value="report.criticidad ?? ''"
-          @change="patch('criticidad', $event.target.value || null)"
-          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]"
-        >
+        <select :value="report.criticidad ?? ''" @change="patch('criticidad', $event.target.value || null)"
+          class="w-full text-xs border border-gray-200 rounded-lg px-2 py-2 sm:py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]">
           <option value="">— sin clasificar —</option>
           <option value="baja">Baja</option>
           <option value="media">Media</option>
@@ -342,15 +303,11 @@ function patch(field, value) {
       <!-- Validez RF_24 -->
       <div>
         <label class="text-xs text-gray-400 block mb-1">Validez</label>
-        <select
-          :value="report.validez ?? 'pendiente'"
-          @change="patch('validez', $event.target.value)"
-          :class="[
-            'w-full text-xs border rounded-lg px-2 py-2 sm:py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]',
-            validezColor,
-            'border-gray-200',
-          ]"
-        >
+        <select :value="report.validez ?? 'pendiente'" @change="patch('validez', $event.target.value)" :class="[
+          'w-full text-xs border rounded-lg px-2 py-2 sm:py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[36px]',
+          validezColor,
+          'border-gray-200',
+        ]">
           <option value="pendiente">Pendiente</option>
           <option value="valido">Válido</option>
           <option value="falso">Falso</option>
