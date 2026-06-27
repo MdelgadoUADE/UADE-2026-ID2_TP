@@ -9,6 +9,7 @@ const reportTags = require("./routes/tags");
 const mapFunctions = require("./utils/mapFunctions");
 const authRoutes = require("./routes/auth");
 const filesRoutes = require("./routes/files");
+const whisperRoutes = require("./routes/whisper");
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/map", mapFunctions);
 app.use("/tags", reportTags);
 app.use("/auth", authRoutes);
 app.use("/files", filesRoutes);
+app.use("/api/whisper", whisperRoutes);
 
 const PORT = 3000;
 
@@ -27,7 +29,7 @@ async function startServer() {
   await connectPostgres();
   await runSeed();
 
-  app.listen(PORT, '0.0.0.0' , () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

@@ -89,15 +89,15 @@ services:
       - "9005:9000" # mapeado a 9005 para no romper MinIO
     environment:
       - ASR_MODEL=small
-      - ASR_ENGINE=openai-whisper
+      - ASR_ENGINE=openai_whisper
     volumes:
       - whisper_models:/root/.cache/whisper
-    restart:
-      - always
+    restart: always
 
 volumes:
   mongo_data:
   minio_data:
+  whisper_models:
 
 # docker compose up --build
 # docker compose down -v   (para bajar volumen tambien)
